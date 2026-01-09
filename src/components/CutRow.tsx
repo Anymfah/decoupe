@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import type { RotationMode } from '../lib/packing'
 import { formatLength, toMm } from '../lib/units'
 import { duplicateCutId, useAppDispatch, useAppState } from '../hooks/useAppState'
-import { Input, IconButton, Stepper, Tooltip } from './ui'
+import { Input, Stepper, Tooltip } from './ui'
 
 function parseUserNumber(raw: string) {
   const v = Number(raw.replace(',', '.'))

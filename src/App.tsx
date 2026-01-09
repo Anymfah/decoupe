@@ -74,7 +74,7 @@ export default function App() {
           </div>
         </header>
 
-        <Summary result={result} unit={state.board.unit} activeBoardIndex={state.activeBoardIndex} />
+        <Summary result={result} activeBoardIndex={state.activeBoardIndex} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
           <aside className="space-y-6">

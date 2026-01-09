@@ -3,7 +3,6 @@ import clsx from 'clsx'
 
 import type { BoardConfig, BoardPlan, Unit } from '../lib/packing'
 import { BoardViewer } from './BoardViewer'
-import { Button } from './ui'
 
 export function BoardsNavigator({
   board,

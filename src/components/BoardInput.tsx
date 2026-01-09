@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Plus, Trash2, Settings2, Box, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Settings2, Box, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 

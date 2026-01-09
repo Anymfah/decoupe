@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Box, Percent, Maximize, Scissors, HelpCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Box, Percent, Maximize, Scissors } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { PackingResult, Unit } from '../lib/packing'
@@ -18,25 +18,19 @@ function formatAreaMm2(mm2: number) {
 
 export function Summary({
   result,
-  unit,
   activeBoardIndex,
 }: {
   result: PackingResult
-  unit: Unit
   activeBoardIndex: number
 }) {
-  const { boardCount, placedCount, unplacedCount, activeUtilization } = useMemo(() => {
+  const { boardCount, unplacedCount } = useMemo(() => {
     const boards = result.boards
-    const placed = boards.reduce((sum, b) => sum + b.placements.length, 0)
     const unplaced = result.unplaced.reduce((sum, p) => sum + Math.max(0, p.quantity), 0)
-    const active = boards[activeBoardIndex]?.utilization ?? 0
     return {
       boardCount: boards.length,
-      placedCount: placed,
       unplacedCount: unplaced,
-      activeUtilization: active,
     }
-  }, [activeBoardIndex, result.boards, result.unplaced])
+  }, [result.boards, result.unplaced])
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up">

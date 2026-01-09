@@ -1,4 +1,4 @@
-import { Copy, Download, RotateCcw, Upload, Share2, FileDown, FileUp, RefreshCw } from 'lucide-react'
+import { Share2, FileDown, FileUp, RefreshCw } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useAppDispatch, useAppState } from '../hooks/useAppState'
