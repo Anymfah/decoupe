@@ -51,6 +51,13 @@ function normalizeRotationMode(value: unknown): RotationMode {
   return 'inherit'
 }
 
+function normalizeColorHex(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const v = value.trim()
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) return undefined
+  return v.toUpperCase()
+}
+
 function makeDefaultCuts(): CutPiece[] {
   const a = createId()
   const b = createId()
@@ -62,6 +69,7 @@ function makeDefaultCuts(): CutPiece[] {
       heightMm: 400,
       quantity: 4,
       rotation: 'inherit',
+      colorHex: undefined,
     },
     {
       id: b,
@@ -70,6 +78,7 @@ function makeDefaultCuts(): CutPiece[] {
       heightMm: 300,
       quantity: 2,
       rotation: 'inherit',
+      colorHex: undefined,
     },
   ]
 }
@@ -105,6 +114,7 @@ function normalizeState(state: AppState): AppState {
     heightMm: clampInt(c.heightMm, 0, 1_000_000),
     quantity: clampInt(c.quantity, 0, 100_000),
     rotation: normalizeRotationMode(c.rotation),
+    colorHex: normalizeColorHex((c as any).colorHex),
   }))
 
   return {
@@ -215,6 +225,7 @@ export function createEmptyCut(overrides?: Partial<CutPiece>): CutPiece {
     heightMm: 100,
     quantity: 1,
     rotation: 'inherit',
+    colorHex: undefined,
     ...overrides,
   }
 }

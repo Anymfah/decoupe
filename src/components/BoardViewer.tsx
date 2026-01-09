@@ -1,9 +1,66 @@
 import { Download } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
-import clsx from 'clsx'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import type { BoardConfig, BoardPlan, Placement, Rect, Unit } from '../lib/packing'
 import { formatLength } from '../lib/units'
+
+function TooltipPortal({
+  clientX,
+  clientY,
+  placement,
+  unit,
+}: {
+  clientX: number
+  clientY: number
+  placement: Placement
+  unit: Unit
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ left: 0, top: 0 })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const pad = 12
+    let left = clientX + 16
+    let top = clientY - rect.height / 2
+
+    if (left + rect.width + pad > window.innerWidth) {
+      left = clientX - rect.width - 16
+    }
+    if (left < pad) left = pad
+
+    if (top < pad) top = pad
+    if (top + rect.height + pad > window.innerHeight) {
+      top = window.innerHeight - rect.height - pad
+    }
+
+    setPos({ left, top })
+  }, [clientX, clientY])
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="pointer-events-none fixed z-50 rounded-xl border bg-surface/95 px-3 py-2 text-xs shadow-lift backdrop-blur-xl"
+      style={{ left: pos.left, top: pos.top, minWidth: 180, maxWidth: 260 }}
+      role="tooltip"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 font-semibold text-text">{placement.label}</div>
+        <div className="shrink-0 text-muted">{placement.rotated ? 'rot.' : 'std.'}</div>
+      </div>
+      <div className="mt-1 text-muted">
+        {formatLength(placement.w, unit)}{unit} × {formatLength(placement.h, unit)}{unit}
+      </div>
+      <div className="mt-1 text-muted">
+        x {formatLength(placement.x, unit)} · y {formatLength(placement.y, unit)}
+      </div>
+    </div>,
+    document.body,
+  )
+}
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n))
@@ -15,7 +72,32 @@ function hashHue(input: string) {
   return h % 360
 }
 
-function colorForPiece(pieceId: string) {
+function hexToRgb(hex: string) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim())
+  if (!m) return null
+  const n = parseInt(m[1], 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+function rgbToHex(rgb: { r: number; g: number; b: number }) {
+  const to = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')
+  return `#${to(rgb.r)}${to(rgb.g)}${to(rgb.b)}`.toUpperCase()
+}
+
+function darken(hex: string, factor: number) {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return hex
+  return rgbToHex({ r: rgb.r * factor, g: rgb.g * factor, b: rgb.b * factor })
+}
+
+function colorForPiece(pieceId: string, overrideHex?: string) {
+  if (overrideHex && /^#[0-9a-fA-F]{6}$/.test(overrideHex)) {
+    return {
+      fill: overrideHex,
+      stroke: darken(overrideHex, 0.78),
+    }
+  }
+
   const hue = hashHue(pieceId)
   return {
     fill: `hsl(${hue} 82% 60%)`,
@@ -89,11 +171,13 @@ export function BoardViewer({
   plan,
   unit,
   gridEnabled,
+  pieceColorById,
 }: {
   board: BoardConfig
   plan: BoardPlan | null
   unit: Unit
   gridEnabled: boolean
+  pieceColorById?: Record<string, string | undefined>
 }) {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [hover, setHover] = useState<{
@@ -151,7 +235,7 @@ export function BoardViewer({
         </button>
       </div>
 
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-2xl border bg-bg/40 shadow-soft">
+      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg border bg-bg/40 shadow-soft">
         <svg
           ref={svgRef}
           className="h-full w-full"
@@ -171,8 +255,8 @@ export function BoardViewer({
             fill="transparent"
             stroke="hsl(var(--border))"
             strokeWidth={2}
-            rx={24}
-            ry={24}
+            rx={4}
+            ry={4}
           />
 
           <rect
@@ -184,8 +268,8 @@ export function BoardViewer({
             stroke="hsl(var(--accent) / 0.55)"
             strokeDasharray="10 10"
             strokeWidth={2}
-            rx={16}
-            ry={16}
+            rx={2}
+            ry={2}
           />
 
           {gridEnabled ? (
@@ -232,14 +316,14 @@ export function BoardViewer({
                 fill="hsl(var(--muted) / 0.35)"
                 stroke="hsl(var(--border) / 0.55)"
                 strokeWidth={1}
-                rx={10}
-                ry={10}
+                rx={2}
+                ry={2}
               />
             ))}
           </g>
 
           {placements.map((p) => {
-            const c = colorForPiece(p.pieceId)
+            const c = colorForPiece(p.pieceId, pieceColorById?.[p.pieceId])
             const showText = p.w >= 140 && p.h >= 70
             const isHovered = hover?.placement.id === p.id
 
@@ -251,11 +335,16 @@ export function BoardViewer({
                   width={p.w}
                   height={p.h}
                   fill={c.fill}
-                  fillOpacity={0.82}
+                  fillOpacity={isHovered ? 0.94 : 0.85}
                   stroke={c.stroke}
-                  strokeWidth={isHovered ? 5 : 2}
-                  rx={14}
-                  ry={14}
+                  strokeWidth={isHovered ? 4 : 2}
+                  rx={4}
+                  ry={4}
+                  style={
+                    isHovered
+                      ? { filter: 'drop-shadow(0px 0px 10px hsl(var(--accent) / 0.35))' }
+                      : undefined
+                  }
                   tabIndex={0}
                   onPointerMove={(e) =>
                     setHover({
@@ -304,36 +393,12 @@ export function BoardViewer({
         </svg>
 
         {hover ? (
-          <div
-            className={clsx(
-              'pointer-events-none absolute z-10 rounded-xl border bg-surface/90 px-3 py-2 text-xs shadow-lift backdrop-blur-xl',
-            )}
-            style={{
-              left: clamp(
-                hover.clientX - 140,
-                10,
-                (typeof window !== 'undefined' ? window.innerWidth : 1200) - 290,
-              ),
-              top: clamp(
-                hover.clientY - 80,
-                10,
-                (typeof window !== 'undefined' ? window.innerHeight : 800) - 90,
-              ),
-              width: 280,
-            }}
-            role="tooltip"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 font-semibold text-text">{hover.placement.label}</div>
-              <div className="shrink-0 text-muted">{hover.placement.rotated ? 'rot.' : 'std.'}</div>
-            </div>
-            <div className="mt-1 text-muted">
-              {mmToLabel(hover.placement.w, unit)} × {mmToLabel(hover.placement.h, unit)}
-            </div>
-            <div className="mt-1 text-muted">
-              x {mmToLabel(hover.placement.x, unit)} · y {mmToLabel(hover.placement.y, unit)}
-            </div>
-          </div>
+          <TooltipPortal
+            clientX={hover.clientX}
+            clientY={hover.clientY}
+            placement={hover.placement}
+            unit={unit}
+          />
         ) : null}
       </div>
     </div>

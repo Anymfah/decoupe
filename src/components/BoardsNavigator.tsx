@@ -8,6 +8,7 @@ export function BoardsNavigator({
   board,
   unit,
   gridEnabled,
+  pieceColorById,
   plans,
   activeIndex,
   onChangeActiveIndex,
@@ -15,6 +16,7 @@ export function BoardsNavigator({
   board: BoardConfig
   unit: Unit
   gridEnabled: boolean
+  pieceColorById?: Record<string, string | undefined>
   plans: BoardPlan[]
   activeIndex: number
   onChangeActiveIndex: (index: number) => void
@@ -54,7 +56,15 @@ export function BoardsNavigator({
   }
 
   if (count <= 1) {
-    return <BoardViewer board={board} plan={plans[0] ?? null} unit={unit} gridEnabled={gridEnabled} />
+    return (
+      <BoardViewer
+        board={board}
+        plan={plans[0] ?? null}
+        unit={unit}
+        gridEnabled={gridEnabled}
+        pieceColorById={pieceColorById}
+      />
+    )
   }
 
   return (
@@ -84,7 +94,13 @@ export function BoardsNavigator({
       </div>
 
       <div className="hidden md:block">
-        <BoardViewer board={board} plan={plans[safeIndex] ?? null} unit={unit} gridEnabled={gridEnabled} />
+        <BoardViewer
+          board={board}
+          plan={plans[safeIndex] ?? null}
+          unit={unit}
+          gridEnabled={gridEnabled}
+          pieceColorById={pieceColorById}
+        />
       </div>
 
       <div className="md:hidden">
@@ -96,7 +112,7 @@ export function BoardsNavigator({
         >
           {plans.map((p) => (
             <div key={p.boardIndex} className="w-full flex-none snap-center">
-              <BoardViewer board={board} plan={p} unit={unit} gridEnabled={gridEnabled} />
+              <BoardViewer board={board} plan={p} unit={unit} gridEnabled={gridEnabled} pieceColorById={pieceColorById} />
             </div>
           ))}
         </div>

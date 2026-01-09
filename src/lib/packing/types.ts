@@ -24,6 +24,7 @@ export type CutPiece = {
   heightMm: number
   quantity: number
   rotation: RotationMode
+  colorHex?: string
 }
 
 export type NormalizedPiece = {

@@ -41,8 +41,6 @@ export function Summary({
     }
   }, [activeBoardIndex, result.boards, result.unplaced])
 
-  const hasUnplaced = result.unplaced.length > 0
-
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -74,49 +72,53 @@ export function Summary({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-sm font-medium text-muted">Statut</div>
-            <div className="mt-1 text-lg font-semibold">Pièces non placées</div>
-            <div className="mt-1 text-sm text-muted">
-              Explications pour les pièces impossibles (marge incluse, rotation, etc.)
-            </div>
-          </div>
-          <div className="shrink-0">
-            {hasUnplaced ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-danger">
-                <AlertTriangle className="h-4 w-4" />
-                Attention
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-success/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-success">
-                <CheckCircle2 className="h-4 w-4" />
-                OK
-              </div>
-            )}
+export function StatusPanel({ result }: { result: PackingResult }) {
+  const hasUnplaced = result.unplaced.length > 0
+
+  return (
+    <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium text-muted">Statut</div>
+          <div className="mt-1 text-lg font-semibold">Pièces non placées</div>
+          <div className="mt-1 text-sm text-muted">
+            Explications pour les pièces impossibles (marge incluse, rotation, etc.)
           </div>
         </div>
-
-        {hasUnplaced ? (
-          <div className="mt-4 space-y-2">
-            {result.unplaced.map((u) => (
-              <div key={`${u.pieceId}-${u.reason}`} className="rounded-xl border bg-bg/60 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0 font-semibold">{u.label || u.pieceId}</div>
-                  <div className="text-sm text-muted">× {u.quantity}</div>
-                </div>
-                <div className="mt-1 text-sm text-muted">{u.message}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-xl border bg-bg/60 p-4 text-sm text-muted">
-            Toutes les pièces demandées ont été placées.
-          </div>
-        )}
+        <div className="shrink-0">
+          {hasUnplaced ? (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-danger">
+              <AlertTriangle className="h-4 w-4" />
+              Attention
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-success/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-success">
+              <CheckCircle2 className="h-4 w-4" />
+              OK
+            </div>
+          )}
+        </div>
       </div>
+
+      {hasUnplaced ? (
+        <div className="mt-4 space-y-2">
+          {result.unplaced.map((u) => (
+            <div key={`${u.pieceId}-${u.reason}`} className="rounded-xl border bg-bg/60 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0 font-semibold">{u.label || u.pieceId}</div>
+                <div className="text-sm text-muted">× {u.quantity}</div>
+              </div>
+              <div className="mt-1 text-sm text-muted">{u.message}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border bg-bg/60 p-4 text-sm text-muted">Toutes les pièces demandées ont été placées.</div>
+      )}
     </div>
   )
 }

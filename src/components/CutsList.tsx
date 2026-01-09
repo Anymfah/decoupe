@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { createEmptyCut, useAppDispatch, useAppState } from '../hooks/useAppState'
 import { CutRow } from './CutRow'
@@ -9,6 +9,12 @@ export function CutsList() {
   const dispatch = useAppDispatch()
 
   const [visibleCount, setVisibleCount] = useState(50)
+  const [expandedId, setExpandedId] = useState<string | null>(() => cuts[0]?.id ?? null)
+
+  useEffect(() => {
+    if (expandedId && cuts.some((c) => c.id === expandedId)) return
+    setExpandedId(cuts[0]?.id ?? null)
+  }, [cuts, expandedId])
 
   const { totalTypes, totalPieces } = useMemo(() => {
     const pieces = cuts.reduce((sum, c) => sum + Math.max(0, c.quantity), 0)
@@ -32,12 +38,11 @@ export function CutsList() {
         <button
           type="button"
           className="inline-flex h-10 items-center gap-2 rounded-xl border bg-surface px-3 text-sm font-semibold shadow-soft transition duration-300 ease-out hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          onClick={() =>
-            dispatch({
-              type: 'ADD_CUT',
-              cut: createEmptyCut({ label: `P${cuts.length + 1}` }),
-            })
-          }
+          onClick={() => {
+            const nextCut = createEmptyCut({ label: `P${cuts.length + 1}` })
+            dispatch({ type: 'ADD_CUT', cut: nextCut })
+            setExpandedId(nextCut.id)
+          }}
         >
           <Plus className="h-4 w-4" />
           Ajouter
@@ -52,7 +57,12 @@ export function CutsList() {
 
       <div className="space-y-3">
         {visibleCuts.map((c) => (
-          <CutRow key={c.id} id={c.id} />
+          <CutRow
+            key={c.id}
+            id={c.id}
+            isExpanded={expandedId === c.id}
+            onToggle={() => setExpandedId((prev) => (prev === c.id ? null : c.id))}
+          />
         ))}
       </div>
 
