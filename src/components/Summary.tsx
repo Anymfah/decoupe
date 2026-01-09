@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Box, Percent, Maximize, Scissors } from 'lucide-react'
 import { useMemo } from 'react'
 
-import type { PackingResult, Unit } from '../lib/packing'
+import type { PackingResult } from '../lib/packing'
 import { KpiPill, GlassCard, cn, Tooltip } from './ui'
 
 function formatPercent(v: number) {
@@ -18,10 +18,8 @@ function formatAreaMm2(mm2: number) {
 
 export function Summary({
   result,
-  activeBoardIndex,
 }: {
   result: PackingResult
-  activeBoardIndex: number
 }) {
   const { boardCount, unplacedCount } = useMemo(() => {
     const boards = result.boards
