@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
 
+import logoDark from './assets/logo-dark.png'
+import logoLight from './assets/logo-light.png'
 import { BoardInput } from './components/BoardInput'
 import { BoardsNavigator } from './components/BoardsNavigator'
 import { CutsList } from './components/CutsList'
@@ -9,16 +11,21 @@ import { StatusPanel, Summary } from './components/Summary'
 import { ThemeToggle } from './components/ThemeToggle'
 import { useAppDispatch, useAppState } from './hooks/useAppState'
 import { useDebouncedPacking } from './hooks/useDebouncedPacking'
+import { useTheme } from './hooks/useTheme'
 import { formatLength } from './lib/units'
 
 export default function App() {
   const state = useAppState()
   const dispatch = useAppDispatch()
+  const { theme } = useTheme()
   const [placementsOpen, setPlacementsOpen] = useState(false)
+
+  const logo = theme === 'dark' ? logoDark : logoLight
 
   const { result, isPending } = useDebouncedPacking({
     board: state.board,
     cuts: state.cuts,
+    stock: state.stock,
     globalRotationDefault: state.globalRotationDefault,
     debounceMs: 200,
   })
@@ -47,10 +54,7 @@ export default function App() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-medium text-muted">Plan Parfait</div>
-            <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">
-              Optimisation de découpes
-            </h1>
+            <img src={logo} alt="Plan Parfait" className="h-10 w-auto md:h-12" />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

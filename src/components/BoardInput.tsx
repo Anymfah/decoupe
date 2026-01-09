@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 
-import { useAppDispatch, useAppState } from '../hooks/useAppState'
+import { createEmptyStock, useAppDispatch, useAppState } from '../hooks/useAppState'
+import type { StockPiece } from '../lib/packing'
 import { formatLength, toMm } from '../lib/units'
 
 type FieldError = {
@@ -35,9 +37,92 @@ const errorClass = 'mt-1 text-xs font-medium text-danger'
 const inputClass =
   'h-10 w-full rounded-xl border bg-bg/60 px-3 text-sm shadow-soft outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30'
 
-export function BoardInput() {
-  const { board, globalRotationDefault, gridEnabled } = useAppState()
+function StockRow({ stock, unit }: { stock: StockPiece; unit: 'mm' | 'cm' }) {
   const dispatch = useAppDispatch()
+
+  const onChangeNumber =
+    (field: 'widthMm' | 'heightMm') =>
+    (raw: string) => {
+      const n = parseUserNumber(raw)
+      const mm = toMm(n, unit)
+      dispatch({ type: 'UPDATE_STOCK', id: stock.id, patch: { [field]: Number.isFinite(mm) ? mm : 0 } })
+    }
+
+  const onChangeQty = (next: number) => {
+    const v = Number.isFinite(next) ? next : 0
+    dispatch({ type: 'UPDATE_STOCK', id: stock.id, patch: { quantity: Math.max(0, Math.round(v)) } })
+  }
+
+  const dimInputClass =
+    'h-8 w-full rounded-lg border bg-bg/50 px-2 text-sm font-mono shadow-soft outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30'
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border bg-bg/40 p-3">
+      <div className="grid flex-1 grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs text-muted">L ({unit})</label>
+          <input
+            inputMode="decimal"
+            className={dimInputClass}
+            value={formatLength(stock.widthMm, unit)}
+            onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted">H ({unit})</label>
+          <input
+            inputMode="decimal"
+            className={dimInputClass}
+            value={formatLength(stock.heightMm, unit)}
+            onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="w-24">
+        <label className="text-xs text-muted">Qté</label>
+        <div className="flex h-8 w-full items-center gap-1 rounded-lg border bg-bg/50 px-1 shadow-soft">
+          <button
+            type="button"
+            className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-bg/60 hover:text-text"
+            onClick={() => onChangeQty(stock.quantity - 1)}
+          >
+            <Minus className="h-3 w-3" />
+          </button>
+          <input
+            inputMode="numeric"
+            className="h-full w-full bg-transparent text-center text-sm font-mono outline-none"
+            value={String(stock.quantity)}
+            onChange={(e) => onChangeQty(parseUserNumber(e.target.value))}
+          />
+          <button
+            type="button"
+            className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-bg/60 hover:text-text"
+            onClick={() => onChangeQty(stock.quantity + 1)}
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          className="grid h-8 w-8 place-items-center rounded-lg text-danger transition hover:bg-danger/10"
+          onClick={() => dispatch({ type: 'REMOVE_STOCK', id: stock.id })}
+          title="Supprimer"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function BoardInput() {
+  const { board, stock, globalRotationDefault, gridEnabled } = useAppState()
+  const dispatch = useAppDispatch()
+  const [showStock, setShowStock] = useState(false)
 
   const { errors, usableWmm, usableHmm } = useMemo(() => {
     const errs = validateBoard(board.widthMm, board.heightMm, board.kerfMm, board.marginMm)
@@ -62,8 +147,10 @@ export function BoardInput() {
     }
   }
 
+  const stockCount = stock.reduce((acc, s) => acc + s.quantity, 0)
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-medium text-muted">Étape 1</div>
@@ -95,38 +182,86 @@ export function BoardInput() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass} htmlFor="board-width">
-            Largeur
-          </label>
-          <div className={hintClass}>Unité: {unit}</div>
-          <input
-            id="board-width"
-            inputMode="decimal"
-            className={clsx(inputClass, errors.width && 'border-danger focus:border-danger focus:ring-danger/20')}
-            value={formatLength(board.widthMm, unit)}
-            onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
-            aria-invalid={Boolean(errors.width)}
-          />
-          {errors.width ? <div className={errorClass}>{errors.width}</div> : null}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-semibold text-text">Format standard (illimité)</label>
         </div>
+        
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="board-width">
+              Largeur
+            </label>
+            <div className={hintClass}>Unité: {unit}</div>
+            <input
+              id="board-width"
+              inputMode="decimal"
+              className={clsx(inputClass, errors.width && 'border-danger focus:border-danger focus:ring-danger/20')}
+              value={formatLength(board.widthMm, unit)}
+              onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
+              aria-invalid={Boolean(errors.width)}
+            />
+            {errors.width ? <div className={errorClass}>{errors.width}</div> : null}
+          </div>
 
-        <div>
-          <label className={labelClass} htmlFor="board-height">
-            Hauteur
-          </label>
-          <div className={hintClass}>Unité: {unit}</div>
-          <input
-            id="board-height"
-            inputMode="decimal"
-            className={clsx(inputClass, errors.height && 'border-danger focus:border-danger focus:ring-danger/20')}
-            value={formatLength(board.heightMm, unit)}
-            onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
-            aria-invalid={Boolean(errors.height)}
-          />
-          {errors.height ? <div className={errorClass}>{errors.height}</div> : null}
+          <div>
+            <label className={labelClass} htmlFor="board-height">
+              Hauteur
+            </label>
+            <div className={hintClass}>Unité: {unit}</div>
+            <input
+              id="board-height"
+              inputMode="decimal"
+              className={clsx(inputClass, errors.height && 'border-danger focus:border-danger focus:ring-danger/20')}
+              value={formatLength(board.heightMm, unit)}
+              onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
+              aria-invalid={Boolean(errors.height)}
+            />
+            {errors.height ? <div className={errorClass}>{errors.height}</div> : null}
+          </div>
         </div>
+      </div>
+
+      {/* Stock Management Section */}
+      <div className="rounded-xl border border-dashed border-border bg-bg/30 p-1">
+        <button
+          type="button"
+          onClick={() => setShowStock(!showStock)}
+          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition hover:bg-bg/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <span className="flex items-center gap-2">
+            {showStock ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Utiliser des chutes / formats prioritaires
+          </span>
+          {stockCount > 0 && !showStock && (
+            <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
+              {stockCount} en stock
+            </span>
+          )}
+        </button>
+
+        {showStock && (
+          <div className="p-3 pt-1 space-y-3">
+            <p className="text-xs text-muted">
+              Ces planches seront utilisées en priorité avant le format standard.
+            </p>
+            
+            <div className="space-y-2">
+              {stock.map((s) => (
+                <StockRow key={s.id} stock={s} unit={unit} />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'ADD_STOCK', stock: createEmptyStock() })}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-bg/40 py-2 text-xs font-medium text-muted transition hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une planche au stock
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -166,7 +301,7 @@ export function BoardInput() {
       <div className="rounded-xl border bg-bg/60 p-4 shadow-soft">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold">Zone découpable</div>
+            <div className="text-sm font-semibold">Zone découpable (standard)</div>
             <div className="mt-1 text-sm text-muted">
               {formatLength(usableWmm, unit)} × {formatLength(usableHmm, unit)} {unit}
             </div>
@@ -198,4 +333,3 @@ export function BoardInput() {
     </div>
   )
 }
-

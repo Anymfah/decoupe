@@ -1,13 +1,14 @@
 import type { PropsWithChildren } from 'react'
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
 
-import type { BoardConfig, CutPiece, RotationMode } from '../lib/packing'
+import type { BoardConfig, CutPiece, RotationMode, StockPiece } from '../lib/packing'
 import { readLocalStorageJson, tryReadStateFromUrlHash, writeLocalStorageJson } from '../lib/storage'
 
 export type AppState = {
   board: BoardConfig
   globalRotationDefault: boolean
   cuts: CutPiece[]
+  stock: StockPiece[]
   activeBoardIndex: number
   gridEnabled: boolean
 }
@@ -21,6 +22,9 @@ export type AppAction =
   | { type: 'UPDATE_CUT'; id: string; patch: Partial<Omit<CutPiece, 'id'>> }
   | { type: 'DUPLICATE_CUT'; id: string; newId: string }
   | { type: 'REMOVE_CUT'; id: string }
+  | { type: 'ADD_STOCK'; stock: StockPiece }
+  | { type: 'UPDATE_STOCK'; id: string; patch: Partial<Omit<StockPiece, 'id'>> }
+  | { type: 'REMOVE_STOCK'; id: string }
   | { type: 'IMPORT_STATE'; state: AppState }
   | { type: 'RESET' }
 
@@ -87,6 +91,7 @@ export const defaultAppState: AppState = {
   board: defaultBoard,
   globalRotationDefault: true,
   cuts: makeDefaultCuts(),
+  stock: [],
   activeBoardIndex: 0,
   gridEnabled: true,
 }
@@ -117,10 +122,18 @@ function normalizeState(state: AppState): AppState {
     colorHex: normalizeColorHex((c as any).colorHex),
   }))
 
+  const stock = (state.stock || []).map((s) => ({
+    id: s.id,
+    widthMm: clampInt(s.widthMm, 0, 1_000_000),
+    heightMm: clampInt(s.heightMm, 0, 1_000_000),
+    quantity: clampInt(s.quantity, 0, 100_000),
+  }))
+
   return {
     ...state,
     board,
     cuts,
+    stock,
     globalRotationDefault: Boolean(state.globalRotationDefault),
     activeBoardIndex: clampInt(state.activeBoardIndex, 0, 10_000),
     gridEnabled: Boolean(state.gridEnabled),
@@ -158,6 +171,17 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'REMOVE_CUT': {
       const cuts = state.cuts.filter((c) => c.id !== action.id)
       return { ...state, cuts }
+    }
+    case 'ADD_STOCK': {
+      return normalizeState({ ...state, stock: [...state.stock, action.stock] })
+    }
+    case 'UPDATE_STOCK': {
+      const stock = state.stock.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s))
+      return normalizeState({ ...state, stock })
+    }
+    case 'REMOVE_STOCK': {
+      const stock = state.stock.filter((s) => s.id !== action.id)
+      return { ...state, stock }
     }
     case 'IMPORT_STATE': {
       return normalizeState(action.state)
@@ -230,7 +254,16 @@ export function createEmptyCut(overrides?: Partial<CutPiece>): CutPiece {
   }
 }
 
+export function createEmptyStock(overrides?: Partial<StockPiece>): StockPiece {
+  return {
+    id: createId(),
+    widthMm: 100,
+    heightMm: 100,
+    quantity: 1,
+    ...overrides,
+  }
+}
+
 export function duplicateCutId() {
   return createId()
 }
-

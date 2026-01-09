@@ -17,6 +17,13 @@ export type BoardConfig = {
   marginMm: number
 }
 
+export type StockPiece = {
+  id: string
+  widthMm: number
+  heightMm: number
+  quantity: number
+}
+
 export type CutPiece = {
   id: string
   label: string
@@ -56,6 +63,8 @@ export type BoardPlan = {
   usableRect: Rect
   usedAreaMm2: number
   wasteAreaMm2: number
+  widthMm: number
+  heightMm: number
 }
 
 export type UnplacedReason = 'tooLarge' | 'invalid' | 'limit'
@@ -77,4 +86,3 @@ export type PackingResult = {
   totalUsedAreaMm2: number
   totalWasteAreaMm2: number
 }
-

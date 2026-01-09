@@ -1,4 +1,4 @@
-import type { BoardConfig, BoardPlan, NormalizedPiece, PackingResult, Placement, Rect, UnplacedPiece } from './types'
+import type { BoardConfig, BoardPlan, NormalizedPiece, PackingResult, Placement, Rect, StockPiece, UnplacedPiece } from './types'
 
 type InternalBoard = {
   boardIndex: number
@@ -7,6 +7,7 @@ type InternalBoard = {
   freeRects: Rect[]
   placements: Placement[]
   usedAreaMm2: number
+  isStock?: boolean
 }
 
 type PlacementCandidate = {
@@ -200,14 +201,16 @@ function computeUtilization(usedAreaMm2: number, boardAreaMm2: number) {
 
 export function packMaxRects(args: {
   board: BoardConfig
+  stock: StockPiece[]
   pieces: NormalizedPiece[]
   globalRotationAllowed: boolean
   maxPlacements?: number
   maxWasteRectsPerBoard?: number
 }): PackingResult {
-  const { board, pieces, globalRotationAllowed, maxPlacements = 5000, maxWasteRectsPerBoard = 250 } = args
+  const { board, stock, pieces, globalRotationAllowed, maxPlacements = 5000, maxWasteRectsPerBoard = 250 } = args
 
   if (board.widthMm <= 0 || board.heightMm <= 0) {
+    // ... error handling
     const unplaced: UnplacedPiece[] = pieces.map((p) => ({
       pieceId: p.id,
       label: p.label,
@@ -227,20 +230,14 @@ export function packMaxRects(args: {
     }
   }
 
-  const marginMm = Math.max(0, board.marginMm)
-  const kerfMm = Math.max(0, board.kerfMm)
+  const defaultMarginMm = Math.max(0, board.marginMm)
+  const defaultKerfMm = Math.max(0, board.kerfMm)
 
-  const boardRect: Rect = { x: 0, y: 0, w: board.widthMm, h: board.heightMm }
-  const usableRect: Rect = {
-    x: marginMm,
-    y: marginMm,
-    w: Math.max(0, board.widthMm - marginMm * 2),
-    h: Math.max(0, board.heightMm - marginMm * 2),
-  }
+  // Validate infinite board
+  const infiniteUsableW = Math.max(0, board.widthMm - defaultMarginMm * 2)
+  const infiniteUsableH = Math.max(0, board.heightMm - defaultMarginMm * 2)
 
-  const boardAreaMm2 = area(boardRect)
-
-  if (usableRect.w <= 0 || usableRect.h <= 0) {
+  if (infiniteUsableW <= 0 || infiniteUsableH <= 0) {
     const unplaced: UnplacedPiece[] = pieces.map((p) => ({
       pieceId: p.id,
       label: p.label,
@@ -260,6 +257,17 @@ export function packMaxRects(args: {
     }
   }
 
+  // Pre-expand stock into a queue of board dimensions
+  const stockQueue: { w: number; h: number }[] = []
+  for (const s of stock) {
+    if (s.widthMm > 0 && s.heightMm > 0) {
+        for (let i = 0; i < s.quantity; i++) {
+            stockQueue.push({ w: s.widthMm, h: s.heightMm })
+        }
+    }
+  }
+
+  // Filter valid pieces
   const unplaced: UnplacedPiece[] = []
   const validPieces: NormalizedPiece[] = []
 
@@ -277,12 +285,28 @@ export function packMaxRects(args: {
       continue
     }
 
-    const allowRotate = globalRotationAllowed && p.canRotate
-    const fits =
-      (p.widthMm <= usableRect.w && p.heightMm <= usableRect.h) ||
-      (allowRotate && p.heightMm <= usableRect.w && p.widthMm <= usableRect.h)
+    // Check against MAX dimension (either largest stock or default board)
+    // We should be careful: if a piece fits in default but not in stock, or vice versa.
+    // We can't strictly reject it here unless it fits in NO available board type.
+    // For simplicity, we check against the largest POSSIBLE board (default + all stocks).
+    let maxW = infiniteUsableW
+    let maxH = infiniteUsableH
+    for(const s of stock) {
+        const sw = Math.max(0, s.widthMm - defaultMarginMm * 2)
+        const sh = Math.max(0, s.heightMm - defaultMarginMm * 2)
+        if (sw > 0 && sh > 0) {
+            maxW = Math.max(maxW, sw)
+            maxH = Math.max(maxH, sh)
+        }
+    }
 
-    if (!fits) {
+    const allowRotate = globalRotationAllowed && p.canRotate
+    // Weak check: does it fit in the largest theoretical box?
+    const fitsSomething =
+      (p.widthMm <= maxW && p.heightMm <= maxH) ||
+      (allowRotate && p.heightMm <= maxW && p.widthMm <= maxH)
+
+    if (!fitsSomething) {
       unplaced.push({
         pieceId: p.id,
         label: p.label,
@@ -290,7 +314,7 @@ export function packMaxRects(args: {
         heightMm: p.heightMm,
         quantity: p.count,
         reason: 'tooLarge',
-        message: 'Plus grande que la zone découpable de la planche.',
+        message: 'Plus grande que toutes les planches disponibles.',
       })
       continue
     }
@@ -298,6 +322,7 @@ export function packMaxRects(args: {
     validPieces.push({ ...p })
   }
 
+  // Limit total pieces
   const totalRequestedPlacements = validPieces.reduce((sum, p) => sum + p.count, 0)
   if (totalRequestedPlacements > maxPlacements) {
     const ratio = maxPlacements / totalRequestedPlacements
@@ -318,6 +343,7 @@ export function packMaxRects(args: {
     }
   }
 
+  // Sort pieces (heuristic)
   validPieces.sort((a, b) => {
     const areaA = a.widthMm * a.heightMm
     const areaB = b.widthMm * b.heightMm
@@ -331,6 +357,27 @@ export function packMaxRects(args: {
 
   const createBoard = (): InternalBoard => {
     const index = boards.length
+    
+    // Determine dimensions from stock queue or default
+    let w = board.widthMm
+    let h = board.heightMm
+    let isStock = false
+
+    if (stockQueue.length > 0) {
+        const next = stockQueue.shift()!
+        w = next.w
+        h = next.h
+        isStock = true
+    }
+
+    const boardRect: Rect = { x: 0, y: 0, w, h }
+    const usableRect: Rect = {
+        x: defaultMarginMm,
+        y: defaultMarginMm,
+        w: Math.max(0, w - defaultMarginMm * 2),
+        h: Math.max(0, h - defaultMarginMm * 2),
+    }
+
     const b: InternalBoard = {
       boardIndex: index,
       boardRect,
@@ -338,6 +385,7 @@ export function packMaxRects(args: {
       freeRects: [usableRect],
       placements: [],
       usedAreaMm2: 0,
+      isStock,
     }
     boards.push(b)
     return b
@@ -350,7 +398,7 @@ export function packMaxRects(args: {
 
     const container = b.freeRects[cand.rectIndex]
     const placedRect: Rect = { x: cand.x, y: cand.y, w: cand.w, h: cand.h }
-    const usedRect = expandUsedRect(placedRect, container, kerfMm)
+    const usedRect = expandUsedRect(placedRect, container, defaultKerfMm)
 
     const placement: Placement = {
       id: createId(),
@@ -373,6 +421,7 @@ export function packMaxRects(args: {
   for (const piece of validPieces) {
     for (let i = 0; i < piece.count; i += 1) {
       let placed = false
+      // Try existing boards
       for (const b of boards) {
         if (placeOnBoard(b, piece)) {
           placed = true
@@ -380,9 +429,59 @@ export function packMaxRects(args: {
         }
       }
 
+      // Try creating new boards until placed or we give up (sanity check)
       if (!placed) {
-        const b = createBoard()
-        placed = placeOnBoard(b, piece)
+        // We might need to try multiple new boards if using stock queue
+        // e.g. piece doesn't fit in Stock A (small), but fits in Stock B (large)
+        // This is tricky: if we burn Stock A for a piece that doesn't fit, do we discard Stock A?
+        // NO. The current "createBoard" consumes the stock.
+        
+        // Correct greedy approach with stock:
+        // We iterate creating boards from stock. If the piece doesn't fit in the current new board,
+        // we KEEP that board open for smaller pieces, but we need to create ANOTHER board for this big piece.
+        // This suggests we might need to look ahead in stockQueue or open multiple boards.
+        
+        // SIMPLE APPROACH:
+        // Just create boards one by one. If it fits, great. If not, try next.
+        // Issue: If we create Board 1 (Small Stock), piece doesn't fit. Board 1 is now "active" but empty/useless for this piece.
+        // Then we create Board 2 (Large Stock). Piece fits.
+        // Board 1 sits there empty?
+        
+        // REFINED LOGIC:
+        // When `!placed`, we enter a loop:
+        //   Create `b = createBoard()`.
+        //   Try place.
+        //   If success -> break loop.
+        //   If fail -> `b` remains in `boards` (maybe empty), loop continues to create next board.
+        //   CAUTION: This could exhaust all stock for 1 giant piece that only fits in default board.
+        //   We should probably cleanup empty boards if we skip them? 
+        //   Actually, MaxRects usually fills 'Best Fit'.
+        
+        // Let's stick to the standard greedy "First Fit" on boards strategy for now.
+        // This means we might open multiple stock boards to find one that fits.
+        // Later pieces can backfill the skipped boards.
+        
+        let attempts = 0
+        const maxAttempts = stockQueue.length + 1 // +1 for default infinite
+        
+        while(!placed && attempts < maxAttempts) {
+             const b = createBoard()
+             if (placeOnBoard(b, piece)) {
+                 placed = true
+             } else {
+                 // Piece didn't fit in this new board.
+                 // This board is now part of 'boards' list and can be used by subsequent smaller pieces.
+                 // We proceed to create the next board in queue.
+                 // If we ran out of stock queue, the next createBoard() will return default board, which should fit (unless piece is huge).
+                 
+                 // If we are at default board and it still doesn't fit, it's truly unplaceable (checked at start).
+                 if (!b.isStock) {
+                     // reached default board and failed. Stop.
+                     break
+                 }
+             }
+             attempts++
+        }
       }
 
       if (!placed) {
@@ -392,17 +491,37 @@ export function packMaxRects(args: {
           widthMm: piece.widthMm,
           heightMm: piece.heightMm,
           quantity: piece.count - i,
-          reason: 'invalid',
-          message: 'Impossible à placer pour une raison inattendue.',
+          reason: 'tooLarge',
+          message: 'Impossible à placer (trop grand pour les planches restantes).',
         })
         break
       }
     }
   }
 
-  const resultBoards: BoardPlan[] = boards.map((b) => {
+  // Remove completely empty boards?
+  // If we opened a Stock board but put nothing in it because nothing fit, it shouldn't be in the result.
+  // Unless the user explicitly wants to see "I tried this board but it failed".
+  // Better to filter empty ones to keep result clean.
+  const nonEmptyBoards = boards.filter(b => b.placements.length > 0)
+
+  // Re-index boards after filtering
+  nonEmptyBoards.forEach((b, idx) => b.boardIndex = idx)
+  // Also need to update placement.boardIndex? Yes.
+  // Actually `placeOnBoard` sets `boardIndex`. If we filter, indices shift.
+  // We need to fix placement indices.
+  for(let i=0; i<nonEmptyBoards.length; i++) {
+      const b = nonEmptyBoards[i]
+      b.boardIndex = i
+      for(const p of b.placements) {
+          p.boardIndex = i
+      }
+  }
+
+  const resultBoards: BoardPlan[] = nonEmptyBoards.map((b) => {
     const wasteRects = normalizeWasteRects(b.freeRects, maxWasteRectsPerBoard)
     const usedAreaMm2 = b.usedAreaMm2
+    const boardAreaMm2 = area(b.boardRect)
     const wasteAreaMm2 = Math.max(0, boardAreaMm2 - usedAreaMm2)
 
     return {
@@ -410,15 +529,18 @@ export function packMaxRects(args: {
       placements: b.placements,
       wasteRects,
       utilization: computeUtilization(usedAreaMm2, boardAreaMm2),
-      usableRect,
+      usableRect: b.usableRect,
       usedAreaMm2,
       wasteAreaMm2,
+      widthMm: b.boardRect.w,
+      heightMm: b.boardRect.h,
     }
   })
 
   const totalUsedAreaMm2 = resultBoards.reduce((sum, b) => sum + b.usedAreaMm2, 0)
   const totalWasteAreaMm2 = resultBoards.reduce((sum, b) => sum + b.wasteAreaMm2, 0)
-  const totalUtilization = computeUtilization(totalUsedAreaMm2, boardAreaMm2 * resultBoards.length)
+  const totalBoardAreaMm2 = resultBoards.reduce((sum, b) => sum + area({x:0,y:0,w:b.widthMm,h:b.heightMm}), 0)
+  const totalUtilization = computeUtilization(totalUsedAreaMm2, totalBoardAreaMm2)
 
   return {
     boards: resultBoards,
@@ -428,4 +550,3 @@ export function packMaxRects(args: {
     totalWasteAreaMm2,
   }
 }
-

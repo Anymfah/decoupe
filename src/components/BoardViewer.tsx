@@ -186,13 +186,13 @@ export function BoardViewer({
     clientY: number
   } | null>(null)
 
-  const boardW = Math.max(1, board.widthMm)
-  const boardH = Math.max(1, board.heightMm)
+  const boardW = Math.max(1, plan?.widthMm ?? board.widthMm)
+  const boardH = Math.max(1, plan?.heightMm ?? board.heightMm)
   const usable = plan?.usableRect ?? {
     x: board.marginMm,
     y: board.marginMm,
-    w: Math.max(0, board.widthMm - board.marginMm * 2),
-    h: Math.max(0, board.heightMm - board.marginMm * 2),
+    w: Math.max(0, boardW - board.marginMm * 2),
+    h: Math.max(0, boardH - board.marginMm * 2),
   }
 
   const gridStep = useMemo(() => {
