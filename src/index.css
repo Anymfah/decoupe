@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg: 0 0% 100%;
+  --surface: 240 5% 96%;
+  --text: 240 6% 10%;
+  --muted: 240 4% 46%;
+  --border: 240 5% 84%;
+  --accent: 211 100% 45%;
+  --accent2: 244 63% 61%;
+  --danger: 0 84% 60%;
+  --success: 142 76% 36%;
+}
+
+html.dark {
+  color-scheme: dark;
+  --bg: 0 0% 0%;
+  --surface: 240 6% 11%;
+  --text: 240 5% 96%;
+  --muted: 240 5% 65%;
+  --border: 240 6% 22%;
+  --accent: 210 100% 52%;
+  --accent2: 286 70% 60%;
+  --danger: 0 91% 71%;
+  --success: 142 71% 45%;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased;
+  }
+
+  * {
+    @apply border-border;
+  }
+}
+
+@layer utilities {
+  .bg-app {
+    background:
+      radial-gradient(900px 600px at 10% 0%, hsl(var(--accent) / 0.12), transparent 60%),
+      radial-gradient(900px 600px at 90% 0%, hsl(var(--accent2) / 0.10), transparent 55%),
+      hsl(var(--bg));
+  }
+
+  html.dark .bg-app {
+    background:
+      radial-gradient(900px 600px at 10% 0%, hsl(var(--accent) / 0.16), transparent 60%),
+      radial-gradient(900px 600px at 90% 0%, hsl(var(--accent2) / 0.14), transparent 55%),
+      hsl(var(--bg));
+  }
+}

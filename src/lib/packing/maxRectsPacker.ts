@@ -1,0 +1,431 @@
+import type { BoardConfig, BoardPlan, NormalizedPiece, PackingResult, Placement, Rect, UnplacedPiece } from './types'
+
+type InternalBoard = {
+  boardIndex: number
+  boardRect: Rect
+  usableRect: Rect
+  freeRects: Rect[]
+  placements: Placement[]
+  usedAreaMm2: number
+}
+
+type PlacementCandidate = {
+  x: number
+  y: number
+  w: number
+  h: number
+  rotated: boolean
+  rectIndex: number
+  score1: number
+  score2: number
+}
+
+function createId() {
+  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`
+}
+
+function area(r: Rect) {
+  return Math.max(0, r.w) * Math.max(0, r.h)
+}
+
+function intersects(a: Rect, b: Rect) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+}
+
+function contains(outer: Rect, inner: Rect) {
+  return (
+    inner.x >= outer.x &&
+    inner.y >= outer.y &&
+    inner.x + inner.w <= outer.x + outer.w &&
+    inner.y + inner.h <= outer.y + outer.h
+  )
+}
+
+function clampNonNegative(r: Rect): Rect | null {
+  const w = Math.max(0, r.w)
+  const h = Math.max(0, r.h)
+  if (w === 0 || h === 0) return null
+  return { x: r.x, y: r.y, w, h }
+}
+
+function expandUsedRect(placed: Rect, container: Rect, kerfMm: number): Rect {
+  const remainingRight = container.x + container.w - (placed.x + placed.w)
+  const remainingBottom = container.y + container.h - (placed.y + placed.h)
+  const extraW = kerfMm > 0 ? Math.min(kerfMm, Math.max(0, remainingRight)) : 0
+  const extraH = kerfMm > 0 ? Math.min(kerfMm, Math.max(0, remainingBottom)) : 0
+  return { x: placed.x, y: placed.y, w: placed.w + extraW, h: placed.h + extraH }
+}
+
+function findBestCandidate(freeRects: Rect[], w: number, h: number, allowRotate: boolean): PlacementCandidate | null {
+  let best: PlacementCandidate | null = null
+
+  for (let i = 0; i < freeRects.length; i += 1) {
+    const r = freeRects[i]
+
+    const tryFit = (tw: number, th: number, rotated: boolean) => {
+      if (tw > r.w || th > r.h) return
+      const leftoverW = r.w - tw
+      const leftoverH = r.h - th
+      const score1 = Math.min(leftoverW, leftoverH)
+      const score2 = Math.max(leftoverW, leftoverH)
+
+      const cand: PlacementCandidate = {
+        x: r.x,
+        y: r.y,
+        w: tw,
+        h: th,
+        rotated,
+        rectIndex: i,
+        score1,
+        score2,
+      }
+
+      if (!best) {
+        best = cand
+        return
+      }
+
+      if (cand.score1 < best.score1 || (cand.score1 === best.score1 && cand.score2 < best.score2)) {
+        best = cand
+      }
+    }
+
+    tryFit(w, h, false)
+    if (allowRotate && w !== h) tryFit(h, w, true)
+  }
+
+  return best
+}
+
+function splitFreeRects(freeRects: Rect[], usedRect: Rect): Rect[] {
+  const next: Rect[] = []
+
+  for (const r of freeRects) {
+    if (!intersects(r, usedRect)) {
+      next.push(r)
+      continue
+    }
+
+    const right = r.x + r.w
+    const bottom = r.y + r.h
+    const usedRight = usedRect.x + usedRect.w
+    const usedBottom = usedRect.y + usedRect.h
+
+    const leftPart = clampNonNegative({ x: r.x, y: r.y, w: usedRect.x - r.x, h: r.h })
+    if (leftPart) next.push(leftPart)
+
+    const rightPart = clampNonNegative({ x: usedRight, y: r.y, w: right - usedRight, h: r.h })
+    if (rightPart) next.push(rightPart)
+
+    const topPart = clampNonNegative({ x: r.x, y: r.y, w: r.w, h: usedRect.y - r.y })
+    if (topPart) next.push(topPart)
+
+    const bottomPart = clampNonNegative({ x: r.x, y: usedBottom, w: r.w, h: bottom - usedBottom })
+    if (bottomPart) next.push(bottomPart)
+  }
+
+  return pruneContained(next)
+}
+
+function pruneContained(rects: Rect[]): Rect[] {
+  const filtered = rects
+    .map(clampNonNegative)
+    .filter((r): r is Rect => Boolean(r))
+    .sort((a, b) => area(b) - area(a))
+
+  const kept: Rect[] = []
+  for (const r of filtered) {
+    let containedByExisting = false
+    for (const k of kept) {
+      if (contains(k, r)) {
+        containedByExisting = true
+        break
+      }
+    }
+    if (!containedByExisting) kept.push(r)
+  }
+  return kept
+}
+
+function subtractRect(base: Rect, cut: Rect): Rect[] {
+  if (!intersects(base, cut)) return [base]
+
+  const ix1 = Math.max(base.x, cut.x)
+  const iy1 = Math.max(base.y, cut.y)
+  const ix2 = Math.min(base.x + base.w, cut.x + cut.w)
+  const iy2 = Math.min(base.y + base.h, cut.y + cut.h)
+
+  const pieces: Rect[] = [
+    { x: base.x, y: base.y, w: ix1 - base.x, h: base.h },
+    { x: ix2, y: base.y, w: base.x + base.w - ix2, h: base.h },
+    { x: ix1, y: base.y, w: ix2 - ix1, h: iy1 - base.y },
+    { x: ix1, y: iy2, w: ix2 - ix1, h: base.y + base.h - iy2 },
+  ]
+
+  return pieces.map(clampNonNegative).filter((r): r is Rect => Boolean(r))
+}
+
+function normalizeWasteRects(freeRects: Rect[], limit: number): Rect[] {
+  const sorted = freeRects
+    .map(clampNonNegative)
+    .filter((r): r is Rect => Boolean(r))
+    .sort((a, b) => area(b) - area(a))
+
+  const result: Rect[] = []
+  for (const r of sorted) {
+    let parts: Rect[] = [r]
+    for (const placed of result) {
+      parts = parts.flatMap((p) => subtractRect(p, placed))
+      if (parts.length === 0) break
+    }
+
+    for (const p of parts) {
+      result.push(p)
+      if (result.length >= limit) return result
+    }
+  }
+
+  return result
+}
+
+function computeUtilization(usedAreaMm2: number, boardAreaMm2: number) {
+  if (boardAreaMm2 <= 0) return 0
+  return Math.max(0, Math.min(100, (usedAreaMm2 / boardAreaMm2) * 100))
+}
+
+export function packMaxRects(args: {
+  board: BoardConfig
+  pieces: NormalizedPiece[]
+  globalRotationAllowed: boolean
+  maxPlacements?: number
+  maxWasteRectsPerBoard?: number
+}): PackingResult {
+  const { board, pieces, globalRotationAllowed, maxPlacements = 5000, maxWasteRectsPerBoard = 250 } = args
+
+  if (board.widthMm <= 0 || board.heightMm <= 0) {
+    const unplaced: UnplacedPiece[] = pieces.map((p) => ({
+      pieceId: p.id,
+      label: p.label,
+      widthMm: p.widthMm,
+      heightMm: p.heightMm,
+      quantity: p.count,
+      reason: 'invalid',
+      message: 'Planche invalide (dimensions non positives).',
+    }))
+
+    return {
+      boards: [],
+      unplaced,
+      totalUtilization: 0,
+      totalUsedAreaMm2: 0,
+      totalWasteAreaMm2: 0,
+    }
+  }
+
+  const marginMm = Math.max(0, board.marginMm)
+  const kerfMm = Math.max(0, board.kerfMm)
+
+  const boardRect: Rect = { x: 0, y: 0, w: board.widthMm, h: board.heightMm }
+  const usableRect: Rect = {
+    x: marginMm,
+    y: marginMm,
+    w: Math.max(0, board.widthMm - marginMm * 2),
+    h: Math.max(0, board.heightMm - marginMm * 2),
+  }
+
+  const boardAreaMm2 = area(boardRect)
+
+  if (usableRect.w <= 0 || usableRect.h <= 0) {
+    const unplaced: UnplacedPiece[] = pieces.map((p) => ({
+      pieceId: p.id,
+      label: p.label,
+      widthMm: p.widthMm,
+      heightMm: p.heightMm,
+      quantity: p.count,
+      reason: 'invalid',
+      message: 'Zone découpable nulle (marge trop grande).',
+    }))
+
+    return {
+      boards: [],
+      unplaced,
+      totalUtilization: 0,
+      totalUsedAreaMm2: 0,
+      totalWasteAreaMm2: 0,
+    }
+  }
+
+  const unplaced: UnplacedPiece[] = []
+  const validPieces: NormalizedPiece[] = []
+
+  for (const p of pieces) {
+    if (p.count <= 0 || p.widthMm <= 0 || p.heightMm <= 0) {
+      unplaced.push({
+        pieceId: p.id,
+        label: p.label,
+        widthMm: p.widthMm,
+        heightMm: p.heightMm,
+        quantity: Math.max(0, p.count),
+        reason: 'invalid',
+        message: 'Dimensions ou quantité invalides.',
+      })
+      continue
+    }
+
+    const allowRotate = globalRotationAllowed && p.canRotate
+    const fits =
+      (p.widthMm <= usableRect.w && p.heightMm <= usableRect.h) ||
+      (allowRotate && p.heightMm <= usableRect.w && p.widthMm <= usableRect.h)
+
+    if (!fits) {
+      unplaced.push({
+        pieceId: p.id,
+        label: p.label,
+        widthMm: p.widthMm,
+        heightMm: p.heightMm,
+        quantity: p.count,
+        reason: 'tooLarge',
+        message: 'Plus grande que la zone découpable de la planche.',
+      })
+      continue
+    }
+
+    validPieces.push({ ...p })
+  }
+
+  const totalRequestedPlacements = validPieces.reduce((sum, p) => sum + p.count, 0)
+  if (totalRequestedPlacements > maxPlacements) {
+    const ratio = maxPlacements / totalRequestedPlacements
+    for (const p of validPieces) {
+      const keep = Math.max(1, Math.floor(p.count * ratio))
+      if (keep < p.count) {
+        unplaced.push({
+          pieceId: p.id,
+          label: p.label,
+          widthMm: p.widthMm,
+          heightMm: p.heightMm,
+          quantity: p.count - keep,
+          reason: 'limit',
+          message: `Quantité trop élevée pour un calcul fluide (limite: ${maxPlacements} placements).`,
+        })
+        p.count = keep
+      }
+    }
+  }
+
+  validPieces.sort((a, b) => {
+    const areaA = a.widthMm * a.heightMm
+    const areaB = b.widthMm * b.heightMm
+    if (areaB !== areaA) return areaB - areaA
+    const maxA = Math.max(a.widthMm, a.heightMm)
+    const maxB = Math.max(b.widthMm, b.heightMm)
+    return maxB - maxA
+  })
+
+  const boards: InternalBoard[] = []
+
+  const createBoard = (): InternalBoard => {
+    const index = boards.length
+    const b: InternalBoard = {
+      boardIndex: index,
+      boardRect,
+      usableRect,
+      freeRects: [usableRect],
+      placements: [],
+      usedAreaMm2: 0,
+    }
+    boards.push(b)
+    return b
+  }
+
+  const placeOnBoard = (b: InternalBoard, piece: NormalizedPiece): boolean => {
+    const allowRotate = globalRotationAllowed && piece.canRotate
+    const cand = findBestCandidate(b.freeRects, piece.widthMm, piece.heightMm, allowRotate)
+    if (!cand) return false
+
+    const container = b.freeRects[cand.rectIndex]
+    const placedRect: Rect = { x: cand.x, y: cand.y, w: cand.w, h: cand.h }
+    const usedRect = expandUsedRect(placedRect, container, kerfMm)
+
+    const placement: Placement = {
+      id: createId(),
+      pieceId: piece.id,
+      label: piece.label,
+      x: placedRect.x,
+      y: placedRect.y,
+      w: placedRect.w,
+      h: placedRect.h,
+      rotated: cand.rotated,
+      boardIndex: b.boardIndex,
+    }
+
+    b.placements.push(placement)
+    b.usedAreaMm2 += placedRect.w * placedRect.h
+    b.freeRects = splitFreeRects(b.freeRects, usedRect)
+    return true
+  }
+
+  for (const piece of validPieces) {
+    for (let i = 0; i < piece.count; i += 1) {
+      let placed = false
+      for (const b of boards) {
+        if (placeOnBoard(b, piece)) {
+          placed = true
+          break
+        }
+      }
+
+      if (!placed) {
+        const b = createBoard()
+        placed = placeOnBoard(b, piece)
+      }
+
+      if (!placed) {
+        unplaced.push({
+          pieceId: piece.id,
+          label: piece.label,
+          widthMm: piece.widthMm,
+          heightMm: piece.heightMm,
+          quantity: piece.count - i,
+          reason: 'invalid',
+          message: 'Impossible à placer pour une raison inattendue.',
+        })
+        break
+      }
+    }
+  }
+
+  const resultBoards: BoardPlan[] = boards.map((b) => {
+    const wasteRects = normalizeWasteRects(b.freeRects, maxWasteRectsPerBoard)
+    const usedAreaMm2 = b.usedAreaMm2
+    const wasteAreaMm2 = Math.max(0, boardAreaMm2 - usedAreaMm2)
+
+    return {
+      boardIndex: b.boardIndex,
+      placements: b.placements,
+      wasteRects,
+      utilization: computeUtilization(usedAreaMm2, boardAreaMm2),
+      usableRect,
+      usedAreaMm2,
+      wasteAreaMm2,
+    }
+  })
+
+  const totalUsedAreaMm2 = resultBoards.reduce((sum, b) => sum + b.usedAreaMm2, 0)
+  const totalWasteAreaMm2 = resultBoards.reduce((sum, b) => sum + b.wasteAreaMm2, 0)
+  const totalUtilization = computeUtilization(totalUsedAreaMm2, boardAreaMm2 * resultBoards.length)
+
+  return {
+    boards: resultBoards,
+    unplaced,
+    totalUtilization,
+    totalUsedAreaMm2,
+    totalWasteAreaMm2,
+  }
+}
+
