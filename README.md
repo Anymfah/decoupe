@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+<div align="center">
+  <img src="src/assets/logo-light.png" alt="ezcut.be logo" width="240" />
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+  # ezcut.be
+  
+  **L'optimisation de découpe de panneaux 2D, simplifiée.**
 
-Currently, two official plugins are available:
+  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+  [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+  [Accéder à l'application](https://ezcut.be) • [Support](mailto:anym@hotmail.fr)
+</div>
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 À propos
 
-## Expanding the ESLint configuration
+**ezcut.be** est un outil web ultra-performant conçu pour les menuisiers, artisans, et bricoleurs. Il permet d'optimiser le placement de pièces rectangulaires sur des panneaux bruts afin de minimiser les chutes et maximiser l'efficacité de la matière première.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Que vous travailliez le bois, l'aluminium, ou le verre, **ezcut.be** calcule pour vous le meilleur agencement possible en quelques millisecondes.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## ✨ Fonctionnalités clés
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- 🧩 **Algorithme Bin Packing** : Optimisation avancée pour un taux d'utilisation maximal.
+- ♻️ **Gestion du Stock & Chutes** : Réutilisez vos restes de projets précédents en priorité.
+- ⚙️ **Paramètres de Coupe** : Prise en compte de l'épaisseur de la lame (Kerf) et des marges de sécurité.
+- 🔄 **Rotation Intelligente** : Autorisez ou bloquez la rotation par pièce pour respecter le fil du bois.
+- 📊 **Tableau de Bord KPI** : Visualisation instantanée de l'efficacité, de la surface utile et des pertes.
+- 📥 **Import / Export** : Sauvegardez vos configurations ou partagez-les via JSON.
+- 🖼️ **Export PNG** : Téléchargez vos plans de découpe haute résolution.
+- 🌓 **Mode Sombre / Clair** : Interface premium conçue pour le confort visuel.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🛠️ Stack Technique
+
+- **Frontend** : React 18, TypeScript, Tailwind CSS
+- **Design** : Apple-inspired UI (Glassmorphism), Lucide Icons
+- **Algorithme** : Implémentation personnalisée de MaxRects Packer
+- **Build Tool** : Vite
+
+## 💻 Installation (Développement)
+
+Si vous souhaitez faire tourner le projet localement :
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/Anymfah/ezcut.be.git
+
+# Installer les dépendances
+npm install
+
+# Lancer le serveur de développement
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 👤 Auteur
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Développé avec passion par **Soheil Saheb-Jamii**.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **LinkedIn** : [linkedin.com/in/ss-jamii](https://www.linkedin.com/in/ss-jamii/)
+- **GitHub** : [@Anymfah](https://github.com/Anymfah)
+
+---
+
+<div align="center">
+  © 2026 ezcut.be - Fait en France 🇫🇷
+</div>

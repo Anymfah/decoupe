@@ -1,7 +1,8 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Box, Percent, Maximize, Scissors, HelpCircle } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { PackingResult, Unit } from '../lib/packing'
+import { KpiPill, GlassCard, cn, Tooltip } from './ui'
 
 function formatPercent(v: number) {
   if (!Number.isFinite(v)) return '0%'
@@ -13,10 +14,6 @@ function formatAreaMm2(mm2: number) {
   const m2 = mm2 / 1_000_000
   const rounded = Math.round(m2 * 1000) / 1000
   return `${rounded} m²`
-}
-
-function plural(n: number, one: string, many: string) {
-  return n === 1 ? one : many
 }
 
 export function Summary({
@@ -42,36 +39,48 @@ export function Summary({
   }, [activeBoardIndex, result.boards, result.unplaced])
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-          <div className="text-sm font-medium text-muted">Planches</div>
-          <div className="mt-2 text-2xl font-semibold">{boardCount}</div>
-          <div className="mt-1 text-sm text-muted">
-            {placedCount} {plural(placedCount, 'placement', 'placements')}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-          <div className="text-sm font-medium text-muted">Utilisation globale</div>
-          <div className="mt-2 text-2xl font-semibold">{formatPercent(result.totalUtilization)}</div>
-          <div className="mt-1 text-sm text-muted">Planche courante: {formatPercent(activeUtilization)}</div>
-        </div>
-
-        <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-          <div className="text-sm font-medium text-muted">Surface utilisée</div>
-          <div className="mt-2 text-2xl font-semibold">{formatAreaMm2(result.totalUsedAreaMm2)}</div>
-          <div className="mt-1 text-sm text-muted">Unités: {unit}</div>
-        </div>
-
-        <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-          <div className="text-sm font-medium text-muted">Chute</div>
-          <div className="mt-2 text-2xl font-semibold">{formatAreaMm2(result.totalWasteAreaMm2)}</div>
-          <div className="mt-1 text-sm text-muted">
-            {unplacedCount > 0 ? `${unplacedCount} non placée(s)` : 'Tout placé'}
-          </div>
-        </div>
-      </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up">
+      <KpiPill 
+        label="Planches" 
+        value={boardCount} 
+        icon={Box} 
+        color="accent" 
+      />
+      <Tooltip 
+        content="Pourcentage de matière utilisée par vos pièces par rapport à la surface totale consommée."
+        wrapperClassName="w-full"
+      >
+        <KpiPill 
+          label="Efficacité" 
+          value={formatPercent(result.totalUtilization)} 
+          icon={Percent} 
+          color={result.totalUtilization > 80 ? 'success' : result.totalUtilization > 50 ? 'accent' : 'warning'} 
+          className="w-full h-full"
+        />
+      </Tooltip>
+      <Tooltip 
+        content="Surface totale cumulée de toutes les pièces placées."
+        wrapperClassName="w-full"
+      >
+        <KpiPill 
+          label="Surface utile" 
+          value={formatAreaMm2(result.totalUsedAreaMm2)} 
+          icon={Maximize} 
+          className="w-full h-full"
+        />
+      </Tooltip>
+      <Tooltip 
+        content="Surface perdue (chutes inexploitables et traits de scie)."
+        wrapperClassName="w-full"
+      >
+        <KpiPill 
+          label="Chutes / Perte" 
+          value={formatAreaMm2(result.totalWasteAreaMm2)} 
+          icon={Scissors} 
+          color={unplacedCount > 0 ? 'danger' : 'muted'}
+          className="w-full h-full"
+        />
+      </Tooltip>
     </div>
   )
 }
@@ -80,46 +89,51 @@ export function StatusPanel({ result }: { result: PackingResult }) {
   const hasUnplaced = result.unplaced.length > 0
 
   return (
-    <div className="rounded-2xl border bg-surface/70 p-4 shadow-soft backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-muted">Statut</div>
-          <div className="mt-1 text-lg font-semibold">Pièces non placées</div>
-          <div className="mt-1 text-sm text-muted">
-            Explications pour les pièces impossibles (marge incluse, rotation, etc.)
+    <GlassCard className={cn(
+      "border-black/[0.03] dark:border-white/[0.03] mt-4",
+      hasUnplaced ? "bg-danger/[0.02] border-danger/10" : "bg-success/[0.02] border-success/10"
+    )}>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5">
+        <div className="flex items-center gap-4">
+          <div className={hasUnplaced ? "text-danger" : "text-success"}>
+            {hasUnplaced ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold tracking-tight">
+              {hasUnplaced ? "Optimisation incomplète" : "Optimisation réussie"}
+            </h3>
+            <p className="text-sm text-muted">
+              {hasUnplaced 
+                ? `${result.unplaced.length} type(s) de pièces n'ont pas pu être placés.` 
+                : "Toutes les pièces ont été placées sur les planches disponibles."}
+            </p>
           </div>
         </div>
-        <div className="shrink-0">
-          {hasUnplaced ? (
-            <div className="inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-danger">
-              <AlertTriangle className="h-4 w-4" />
-              Attention
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 rounded-xl border border-success/30 bg-bg/60 px-3 py-2 text-sm font-semibold text-success">
-              <CheckCircle2 className="h-4 w-4" />
-              OK
-            </div>
-          )}
-        </div>
+        
+        {!hasUnplaced && (
+          <div className="hidden md:block px-4 py-2 rounded-full bg-success/10 border border-success/20 text-success text-xs font-bold uppercase tracking-widest">
+            Prêt pour la découpe
+          </div>
+        )}
       </div>
 
-      {hasUnplaced ? (
-        <div className="mt-4 space-y-2">
-          {result.unplaced.map((u) => (
-            <div key={`${u.pieceId}-${u.reason}`} className="rounded-xl border bg-bg/60 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="min-w-0 font-semibold">{u.label || u.pieceId}</div>
-                <div className="text-sm text-muted">× {u.quantity}</div>
+      {hasUnplaced && (
+        <div className="px-5 pb-5 animate-scale-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {result.unplaced.map((u) => (
+              <div key={`${u.pieceId}-${u.reason}`} className="p-3 rounded-apple-lg bg-danger/5 border border-danger/10 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-danger/90">{u.label || `ID: ${u.pieceId}`}</span>
+                  <span className="text-[10px] font-bold bg-danger/20 text-danger px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    ×{u.quantity}
+                  </span>
+                </div>
+                <p className="text-xs text-danger/70 leading-relaxed">{u.message}</p>
               </div>
-              <div className="mt-1 text-sm text-muted">{u.message}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="mt-4 rounded-xl border bg-bg/60 p-4 text-sm text-muted">Toutes les pièces demandées ont été placées.</div>
       )}
-    </div>
+    </GlassCard>
   )
 }
-

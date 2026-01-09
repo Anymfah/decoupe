@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Settings2, Box, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 
 import { createEmptyStock, useAppDispatch, useAppState } from '../hooks/useAppState'
 import type { StockPiece } from '../lib/packing'
 import { formatLength, toMm } from '../lib/units'
+import { Input, Button, IconButton, SectionTitle, Stepper, Toggle, Tooltip } from './ui'
 
 type FieldError = {
   width?: string
@@ -27,15 +28,9 @@ function validateBoard(widthMm: number, heightMm: number, kerfMm: number, margin
 
   const usableW = widthMm - marginMm * 2
   const usableH = heightMm - marginMm * 2
-  if (usableW <= 0 || usableH <= 0) errors.margin = 'Marge trop grande: zone découpable nulle.'
+  if (usableW <= 0 || usableH <= 0) errors.margin = 'Marge trop grande.'
   return errors
 }
-
-const labelClass = 'text-sm font-medium text-text'
-const hintClass = 'mt-1 text-xs text-muted'
-const errorClass = 'mt-1 text-xs font-medium text-danger'
-const inputClass =
-  'h-10 w-full rounded-xl border bg-bg/60 px-3 text-sm shadow-soft outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30'
 
 function StockRow({ stock, unit }: { stock: StockPiece; unit: 'mm' | 'cm' }) {
   const dispatch = useAppDispatch()
@@ -53,67 +48,36 @@ function StockRow({ stock, unit }: { stock: StockPiece; unit: 'mm' | 'cm' }) {
     dispatch({ type: 'UPDATE_STOCK', id: stock.id, patch: { quantity: Math.max(0, Math.round(v)) } })
   }
 
-  const dimInputClass =
-    'h-8 w-full rounded-lg border bg-bg/50 px-2 text-sm font-mono shadow-soft outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30'
-
   return (
-    <div className="flex items-start gap-3 rounded-xl border bg-bg/40 p-3">
-      <div className="grid flex-1 grid-cols-2 gap-2">
-        <div>
-          <label className="text-xs text-muted">L ({unit})</label>
-          <input
-            inputMode="decimal"
-            className={dimInputClass}
-            value={formatLength(stock.widthMm, unit)}
-            onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted">H ({unit})</label>
-          <input
-            inputMode="decimal"
-            className={dimInputClass}
-            value={formatLength(stock.heightMm, unit)}
-            onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
-          />
-        </div>
+    <div className="flex items-end gap-3 p-3 rounded-apple-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all group">
+      <div className="flex-1 grid grid-cols-2 gap-2">
+        <Input
+          label={`L (${unit})`}
+          value={formatLength(stock.widthMm, unit)}
+          onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
+          className="h-9 py-1 font-mono text-center px-1"
+        />
+        <Input
+          label={`H (${unit})`}
+          value={formatLength(stock.heightMm, unit)}
+          onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
+          className="h-9 py-1 font-mono text-center px-1"
+        />
       </div>
 
-      <div className="w-24">
-        <label className="text-xs text-muted">Qté</label>
-        <div className="flex h-8 w-full items-center gap-1 rounded-lg border bg-bg/50 px-1 shadow-soft">
-          <button
-            type="button"
-            className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-bg/60 hover:text-text"
-            onClick={() => onChangeQty(stock.quantity - 1)}
-          >
-            <Minus className="h-3 w-3" />
-          </button>
-          <input
-            inputMode="numeric"
-            className="h-full w-full bg-transparent text-center text-sm font-mono outline-none"
-            value={String(stock.quantity)}
-            onChange={(e) => onChangeQty(parseUserNumber(e.target.value))}
-          />
-          <button
-            type="button"
-            className="grid h-6 w-6 place-items-center rounded text-muted hover:bg-bg/60 hover:text-text"
-            onClick={() => onChangeQty(stock.quantity + 1)}
-          >
-            <Plus className="h-3 w-3" />
-          </button>
-        </div>
+      <div className="shrink-0 flex flex-col gap-1">
+        <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Qté</label>
+        <Stepper value={stock.quantity} onChange={onChangeQty} />
       </div>
 
-      <div className="mt-4">
-        <button
-          type="button"
-          className="grid h-8 w-8 place-items-center rounded-lg text-danger transition hover:bg-danger/10"
+      <div className="mb-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
+        <IconButton
+          icon={Trash2}
+          variant="danger"
+          size="sm"
           onClick={() => dispatch({ type: 'REMOVE_STOCK', id: stock.id })}
-          title="Supprimer"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+          className="w-8 h-8 p-0"
+        />
       </div>
     </div>
   )
@@ -151,30 +115,29 @@ export function BoardInput() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-muted">Étape 1</div>
-          <div className="mt-1 text-lg font-semibold">Planche</div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+            <Box className="w-4 h-4" />
+          </div>
+          <SectionTitle className="mb-0 text-base">Planche de base</SectionTitle>
         </div>
-        <div className="inline-flex rounded-xl border bg-bg/60 p-1 shadow-soft">
+        
+        <div className="flex p-0.5 bg-black/5 dark:bg-white/5 border border-black/[0.05] dark:border-white/[0.05] rounded-apple-lg">
           <button
-            type="button"
             onClick={() => onUnitChange('mm')}
-            aria-pressed={unit === 'mm'}
             className={clsx(
-              'h-8 rounded-lg px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-              unit === 'mm' ? 'bg-surface shadow-soft' : 'text-muted hover:text-text',
+              "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-apple-md",
+              unit === 'mm' ? "bg-accent text-white shadow-sm" : "text-muted hover:text-text"
             )}
           >
             mm
           </button>
           <button
-            type="button"
             onClick={() => onUnitChange('cm')}
-            aria-pressed={unit === 'cm'}
             className={clsx(
-              'h-8 rounded-lg px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-              unit === 'cm' ? 'bg-surface shadow-soft' : 'text-muted hover:text-text',
+              "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-all rounded-apple-md",
+              unit === 'cm' ? "bg-accent text-white shadow-sm" : "text-muted hover:text-text"
             )}
           >
             cm
@@ -182,152 +145,211 @@ export function BoardInput() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-text">Format standard (illimité)</label>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelClass} htmlFor="board-width">
-              Largeur
-            </label>
-            <div className={hintClass}>Unité: {unit}</div>
-            <input
-              id="board-width"
-              inputMode="decimal"
-              className={clsx(inputClass, errors.width && 'border-danger focus:border-danger focus:ring-danger/20')}
-              value={formatLength(board.widthMm, unit)}
-              onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
-              aria-invalid={Boolean(errors.width)}
-            />
-            {errors.width ? <div className={errorClass}>{errors.width}</div> : null}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="relative group">
+          <Input
+            label="Largeur"
+            tooltip="Dimension horizontale du panneau brut."
+            placeholder={`en ${unit}`}
+            value={formatLength(board.widthMm, unit)}
+            onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
+            error={errors.width}
+            className="font-mono text-base pr-16"
+          />
+          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => {
+                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.widthMm, unit)) - 1, unit));
+                dispatch({ type: 'SET_BOARD', patch: { widthMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <button 
+              onClick={() => {
+                const next = toMm(parseUserNumber(formatLength(board.widthMm, unit)) + 1, unit);
+                dispatch({ type: 'SET_BOARD', patch: { widthMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
-
-          <div>
-            <label className={labelClass} htmlFor="board-height">
-              Hauteur
-            </label>
-            <div className={hintClass}>Unité: {unit}</div>
-            <input
-              id="board-height"
-              inputMode="decimal"
-              className={clsx(inputClass, errors.height && 'border-danger focus:border-danger focus:ring-danger/20')}
-              value={formatLength(board.heightMm, unit)}
-              onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
-              aria-invalid={Boolean(errors.height)}
-            />
-            {errors.height ? <div className={errorClass}>{errors.height}</div> : null}
+        </div>
+        <div className="relative group">
+          <Input
+            label="Hauteur"
+            tooltip="Dimension verticale du panneau brut."
+            placeholder={`en ${unit}`}
+            value={formatLength(board.heightMm, unit)}
+            onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
+            error={errors.height}
+            className="font-mono text-base pr-16"
+          />
+          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => {
+                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.heightMm, unit)) - 1, unit));
+                dispatch({ type: 'SET_BOARD', patch: { heightMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <button 
+              onClick={() => {
+                const next = toMm(parseUserNumber(formatLength(board.heightMm, unit)) + 1, unit);
+                dispatch({ type: 'SET_BOARD', patch: { heightMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Stock Management Section */}
-      <div className="rounded-xl border border-dashed border-border bg-bg/30 p-1">
+      <div className="p-0.5 rounded-apple-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
         <button
           type="button"
           onClick={() => setShowStock(!showStock)}
-          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition hover:bg-bg/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex w-full items-center justify-between p-3 text-left transition-all hover:bg-black/[0.03] dark:hover:bg-white/[0.03] rounded-apple-lg"
         >
-          <span className="flex items-center gap-2">
-            {showStock ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            Utiliser des chutes / formats prioritaires
-          </span>
-          {stockCount > 0 && !showStock && (
-            <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
-              {stockCount} en stock
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <div className={clsx(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm",
+              stockCount > 0 ? "bg-accent/20 text-accent" : "bg-black/5 dark:bg-white/10 text-muted"
+            )}>
+              <Settings2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[13px] font-bold">Chutes & Stock</div>
+              <div className="text-[11px] text-muted font-medium">Formats prioritaires</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {stockCount > 0 && (
+              <span className="text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded-full uppercase tracking-widest">
+                {stockCount}
+              </span>
+            )}
+            {showStock ? <ChevronUp className="h-4 w-4 text-muted2" /> : <ChevronDown className="h-4 w-4 text-muted2" />}
+          </div>
         </button>
 
         {showStock && (
-          <div className="p-3 pt-1 space-y-3">
-            <p className="text-xs text-muted">
-              Ces planches seront utilisées en priorité avant le format standard.
-            </p>
-            
-            <div className="space-y-2">
+          <div className="p-3 pt-0 space-y-3 animate-slide-up">
+            <div className="h-px bg-black/[0.05] dark:bg-white/[0.05] mx-1 mb-3" />
+            <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
               {stock.map((s) => (
                 <StockRow key={s.id} stock={s} unit={unit} />
               ))}
+              {stock.length === 0 && (
+                <div className="text-center py-8 text-muted text-[11px] font-medium border border-dashed border-black/10 dark:border-white/10 rounded-apple-lg bg-black/[0.01] dark:bg-white/[0.01]">
+                  Aucune chute enregistrée.
+                </div>
+              )}
             </div>
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => dispatch({ type: 'ADD_STOCK', stock: createEmptyStock() })}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-bg/40 py-2 text-xs font-medium text-muted transition hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full border-dashed bg-transparent hover:bg-black/5 dark:hover:bg-white/5 border-black/10 dark:border-white/10 py-3"
             >
-              <Plus className="h-4 w-4" />
-              Ajouter une planche au stock
-            </button>
+              <Plus className="h-3.5 w-3.5 mr-2" />
+              Ajouter une chute
+            </Button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass} htmlFor="board-kerf">
-            Kerf (mm)
-          </label>
-          <div className={hintClass}>Perte de coupe entre pièces (mm)</div>
-          <input
-            id="board-kerf"
-            inputMode="decimal"
-            className={clsx(inputClass, errors.kerf && 'border-danger focus:border-danger focus:ring-danger/20')}
+      <div className="grid grid-cols-2 gap-4 pt-2">
+        <div className="relative group">
+          <Input
+            label="Lame / Kerf (mm)"
+            tooltip="Épaisseur du trait de coupe de votre scie (matière perdue à chaque coupe)."
             value={String(Math.max(0, Math.round(board.kerfMm)))}
             onChange={(e) => onBoardNumberChange('kerfMm')(e.target.value)}
-            aria-invalid={Boolean(errors.kerf)}
+            error={errors.kerf}
+            className="font-mono h-9 pr-16"
           />
-          {errors.kerf ? <div className={errorClass}>{errors.kerf}</div> : null}
+          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => {
+                const next = Math.max(0, board.kerfMm - 1);
+                dispatch({ type: 'SET_BOARD', patch: { kerfMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <button 
+              onClick={() => {
+                const next = board.kerfMm + 1;
+                dispatch({ type: 'SET_BOARD', patch: { kerfMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
-
-        <div>
-          <label className={labelClass} htmlFor="board-margin">
-            Marge (mm)
-          </label>
-          <div className={hintClass}>Bord non découpable (mm)</div>
-          <input
-            id="board-margin"
-            inputMode="decimal"
-            className={clsx(inputClass, errors.margin && 'border-danger focus:border-danger focus:ring-danger/20')}
+        <div className="relative group">
+          <Input
+            label="Marge (mm)"
+            tooltip="Zone de sécurité sur le pourtour de la planche."
             value={String(Math.max(0, Math.round(board.marginMm)))}
             onChange={(e) => onBoardNumberChange('marginMm')(e.target.value)}
-            aria-invalid={Boolean(errors.margin)}
+            error={errors.margin}
+            className="font-mono h-9 pr-16"
           />
-          {errors.margin ? <div className={errorClass}>{errors.margin}</div> : null}
+          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => {
+                const next = Math.max(0, board.marginMm - 1);
+                dispatch({ type: 'SET_BOARD', patch: { marginMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <button 
+              onClick={() => {
+                const next = board.marginMm + 1;
+                dispatch({ type: 'SET_BOARD', patch: { marginMm: next } });
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl border bg-bg/60 p-4 shadow-soft">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">Zone découpable (standard)</div>
-            <div className="mt-1 text-sm text-muted">
-              {formatLength(usableWmm, unit)} × {formatLength(usableHmm, unit)} {unit}
-            </div>
+      <div className="p-4 rounded-apple-lg bg-accent/[0.03] border border-accent/10 flex items-center justify-between shadow-sm">
+        <div>
+          <div className="text-[10px] font-bold text-accent uppercase tracking-[0.2em] mb-1">Zone utile</div>
+          <div className="text-lg font-mono font-bold tracking-tight">
+            {formatLength(usableWmm, unit)} <span className="text-accent/30 text-xs">×</span> {formatLength(usableHmm, unit)} <span className="text-[11px] font-sans font-bold text-muted/60 uppercase tracking-widest">{unit}</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 text-sm text-muted">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-[hsl(var(--accent))]"
-                checked={globalRotationDefault}
-                onChange={(e) => dispatch({ type: 'SET_GLOBAL_ROTATION_DEFAULT', value: e.target.checked })}
-              />
-              Rotation par défaut
-            </label>
-
-            <label className="inline-flex items-center gap-2 text-sm text-muted">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-[hsl(var(--accent))]"
-                checked={gridEnabled}
-                onChange={(e) => dispatch({ type: 'SET_GRID_ENABLED', value: e.target.checked })}
-              />
-              Grille
-            </label>
-          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Tooltip content="Active/Désactive la rotation globale pour toutes les pièces réglées sur 'Auto'.">
+            <Toggle 
+              checked={globalRotationDefault} 
+              onChange={(v) => dispatch({ type: 'SET_GLOBAL_ROTATION_DEFAULT', value: v })}
+              label="Rotation"
+            />
+          </Tooltip>
+          <Tooltip content="Affiche une grille de 10cm sur les planches pour faciliter la lecture.">
+            <Toggle 
+              checked={gridEnabled} 
+              onChange={(v) => dispatch({ type: 'SET_GRID_ENABLED', value: v })}
+              label="Grille"
+            />
+          </Tooltip>
         </div>
       </div>
     </div>

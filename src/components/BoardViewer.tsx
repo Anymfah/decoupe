@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 
 import type { BoardConfig, BoardPlan, Placement, Rect, Unit } from '../lib/packing'
 import { formatLength } from '../lib/units'
+import { Button } from './ui'
 
 function TooltipPortal({
   clientX,
@@ -43,19 +44,25 @@ function TooltipPortal({
   return createPortal(
     <div
       ref={ref}
-      className="pointer-events-none fixed z-50 rounded-xl border bg-surface/95 px-3 py-2 text-xs shadow-lift backdrop-blur-xl"
-      style={{ left: pos.left, top: pos.top, minWidth: 180, maxWidth: 260 }}
+      className="pointer-events-none fixed z-50 rounded-apple-lg border border-white/20 bg-[#070A10]/95 px-4 py-3 text-xs shadow-glass-lg backdrop-blur-xl animate-scale-in"
+      style={{ left: pos.left, top: pos.top, minWidth: 200, maxWidth: 300 }}
       role="tooltip"
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 font-semibold text-text">{placement.label}</div>
-        <div className="shrink-0 text-muted">{placement.rotated ? 'rot.' : 'std.'}</div>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="min-w-0 font-bold text-white text-sm">{placement.label}</div>
+        <div className="shrink-0 text-[10px] font-bold bg-white/10 text-muted px-1.5 py-0.5 rounded uppercase tracking-wider">
+          {placement.rotated ? 'Rotation' : 'Normal'}
+        </div>
       </div>
-      <div className="mt-1 text-muted">
-        {formatLength(placement.w, unit)}{unit} × {formatLength(placement.h, unit)}{unit}
-      </div>
-      <div className="mt-1 text-muted">
-        x {formatLength(placement.x, unit)} · y {formatLength(placement.y, unit)}
+      <div className="space-y-1">
+        <div className="flex justify-between items-center text-muted">
+          <span>Dimensions:</span>
+          <span className="text-white font-mono">{formatLength(placement.w, unit)} × {formatLength(placement.h, unit)} {unit}</span>
+        </div>
+        <div className="flex justify-between items-center text-muted">
+          <span>Position:</span>
+          <span className="text-white font-mono">X: {formatLength(placement.x, unit)} · Y: {formatLength(placement.y, unit)}</span>
+        </div>
       </div>
     </div>,
     document.body,
@@ -94,14 +101,14 @@ function colorForPiece(pieceId: string, overrideHex?: string) {
   if (overrideHex && /^#[0-9a-fA-F]{6}$/.test(overrideHex)) {
     return {
       fill: overrideHex,
-      stroke: darken(overrideHex, 0.78),
+      stroke: darken(overrideHex, 0.7),
     }
   }
 
   const hue = hashHue(pieceId)
   return {
-    fill: `hsl(${hue} 82% 60%)`,
-    stroke: `hsl(${hue} 82% 48%)`,
+    fill: `hsl(${hue}, 70%, 55%)`,
+    stroke: `hsl(${hue}, 70%, 40%)`,
   }
 }
 
@@ -117,12 +124,9 @@ async function exportSvgToPng(svg: SVGSVGElement, fileName: string) {
   const clone = svg.cloneNode(true) as SVGSVGElement
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
 
-  const rootStyle = getComputedStyle(document.documentElement)
-  for (const key of ['--bg', '--surface', '--text', '--muted', '--border', '--accent', '--accent2'] as const) {
-    const value = rootStyle.getPropertyValue(key).trim()
-    if (value) clone.style.setProperty(key, value)
-  }
-
+  // Set default styles for export
+  clone.style.backgroundColor = '#070A10';
+  
   const viewBox = clone.viewBox.baseVal
   const vbW = viewBox?.width || Number(clone.getAttribute('width')) || 1000
   const vbH = viewBox?.height || Number(clone.getAttribute('height')) || 1000
@@ -151,9 +155,7 @@ async function exportSvgToPng(svg: SVGSVGElement, fileName: string) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const bg = rootStyle.getPropertyValue('--bg').trim()
-  const bgColor = bg ? `hsl(${bg})` : '#ffffff'
-  ctx.fillStyle = bgColor
+  ctx.fillStyle = '#070A10'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
@@ -215,27 +217,28 @@ export function BoardViewer({
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-4 flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-muted">Planche</div>
-          <div className="mt-1 truncate text-sm font-semibold">
-            {mmToLabel(boardW, unit)} × {mmToLabel(boardH, unit)}
+          <div className="text-[10px] font-bold text-muted2 uppercase tracking-widest mb-0.5">Format de planche</div>
+          <div className="truncate text-base font-bold tracking-tight text-white/90">
+            {mmToLabel(boardW, unit)} <span className="text-muted/40 font-normal">×</span> {mmToLabel(boardH, unit)}
           </div>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-xl border bg-surface px-3 text-sm font-semibold shadow-soft transition duration-300 ease-out hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => {
             if (!svgRef.current) return
-            exportSvgToPng(svgRef.current, `planche-${(plan?.boardIndex ?? 0) + 1}.png`)
+            exportSvgToPng(svgRef.current, `ezcut-be-planche-${(plan?.boardIndex ?? 0) + 1}.png`)
           }}
+          className="h-9 px-3"
         >
-          <Download className="h-4 w-4" />
-          Télécharger
-        </button>
+          <Download className="h-4 w-4 mr-2" />
+          Exporter PNG
+        </Button>
       </div>
 
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg border bg-bg/40 shadow-soft">
+      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-apple-lg border border-white/5 bg-black/20 shadow-inner">
         <svg
           ref={svgRef}
           className="h-full w-full"
@@ -245,35 +248,35 @@ export function BoardViewer({
           aria-label="Prévisualisation de la planche"
           onPointerLeave={() => setHover(null)}
         >
-          <rect x={0} y={0} width={boardW} height={boardH} fill="transparent" />
+          {/* Main Board Area */}
+          <rect x={0} y={0} width={boardW} height={boardH} fill="#0A0E14" />
 
+          {/* Board border */}
           <rect
             x={0}
             y={0}
             width={boardW}
             height={boardH}
             fill="transparent"
-            stroke="hsl(var(--border))"
-            strokeWidth={2}
-            rx={4}
-            ry={4}
+            stroke="rgba(255, 255, 255, 0.1)"
+            strokeWidth={4}
           />
 
+          {/* Usable Area (Margin) */}
           <rect
             x={usable.x}
             y={usable.y}
             width={usable.w}
             height={usable.h}
             fill="transparent"
-            stroke="hsl(var(--accent) / 0.55)"
-            strokeDasharray="10 10"
+            stroke="rgba(30, 167, 255, 0.3)"
+            strokeDasharray="12 8"
             strokeWidth={2}
-            rx={2}
-            ry={2}
           />
 
-          {gridEnabled ? (
-            <g opacity={0.5}>
+          {/* Grid lines */}
+          {gridEnabled && (
+            <g opacity={0.2}>
               {Array.from({ length: Math.floor(usable.w / gridStep) + 1 }).map((_, i) => {
                 const x = usable.x + i * gridStep
                 return (
@@ -283,7 +286,7 @@ export function BoardViewer({
                     y1={usable.y}
                     x2={x}
                     y2={usable.y + usable.h}
-                    stroke="hsl(var(--border) / 0.7)"
+                    stroke="rgba(255, 255, 255, 0.2)"
                     strokeWidth={1}
                   />
                 )
@@ -297,15 +300,16 @@ export function BoardViewer({
                     y1={y}
                     x2={usable.x + usable.w}
                     y2={y}
-                    stroke="hsl(var(--border) / 0.7)"
+                    stroke="rgba(255, 255, 255, 0.2)"
                     strokeWidth={1}
                   />
                 )
               })}
             </g>
-          ) : null}
+          )}
 
-          <g opacity={0.3}>
+          {/* Waste / Chutes */}
+          <g opacity={0.1}>
             {wasteRects.map((r, idx) => (
               <rect
                 key={`w-${idx}`}
@@ -313,19 +317,23 @@ export function BoardViewer({
                 y={r.y}
                 width={r.w}
                 height={r.h}
-                fill="hsl(var(--muted) / 0.35)"
-                stroke="hsl(var(--border) / 0.55)"
+                fill="rgba(255, 255, 255, 0.2)"
+                stroke="rgba(255, 255, 255, 0.3)"
                 strokeWidth={1}
-                rx={2}
-                ry={2}
               />
             ))}
           </g>
 
+          {/* Placements */}
           {placements.map((p) => {
             const c = colorForPiece(p.pieceId, pieceColorById?.[p.pieceId])
-            const showText = p.w >= 140 && p.h >= 70
             const isHovered = hover?.placement.id === p.id
+            
+            // Dynamic font sizing based on piece dimensions
+            const labelFontSize = Math.min(Math.max(p.w / 8, 12), p.h / 2.5, 32)
+            const dimFontSize = Math.min(labelFontSize * 0.7, 20)
+            const showLabel = p.w > 40 && p.h > 25
+            const showDims = p.w > 80 && p.h > 50
 
             return (
               <g key={p.id}>
@@ -335,17 +343,12 @@ export function BoardViewer({
                   width={p.w}
                   height={p.h}
                   fill={c.fill}
-                  fillOpacity={isHovered ? 0.94 : 0.85}
+                  fillOpacity={isHovered ? 1 : 0.85}
                   stroke={c.stroke}
-                  strokeWidth={isHovered ? 4 : 2}
-                  rx={4}
-                  ry={4}
-                  style={
-                    isHovered
-                      ? { filter: 'drop-shadow(0px 0px 10px hsl(var(--accent) / 0.35))' }
-                      : undefined
-                  }
-                  tabIndex={0}
+                  strokeWidth={isHovered ? 5 : 1}
+                  rx={2}
+                  ry={2}
+                  className="transition-all duration-200 cursor-help"
                   onPointerMove={(e) =>
                     setHover({
                       placement: p,
@@ -363,45 +366,69 @@ export function BoardViewer({
                   }}
                   onBlur={() => setHover(null)}
                 />
-                {showText ? (
-                  <>
+                
+                {/* Subtle highlight effect */}
+                <rect
+                  x={p.x + 1}
+                  y={p.y + 1}
+                  width={p.w - 2}
+                  height={Math.min(p.h / 2, 20)}
+                  fill="white"
+                  fillOpacity={0.08}
+                  style={{ pointerEvents: 'none' }}
+                  rx={1}
+                />
+
+                {showLabel && (
+                  <g style={{ pointerEvents: 'none' }}>
                     <text
-                      x={p.x + 12}
-                      y={p.y + 26}
-                      fontSize={26}
-                      fontWeight={700}
-                      fill="hsl(0 0% 100% / 0.92)"
-                      style={{ pointerEvents: 'none' }}
+                      x={p.x + p.w / 2}
+                      y={p.y + (showDims ? p.h / 2 - labelFontSize/4 : p.h / 2)}
+                      fontSize={labelFontSize}
+                      fontWeight={800}
+                      fill="white"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="select-none"
+                      style={{ 
+                        filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.3))',
+                        maxWidth: '90%'
+                      }}
                     >
-                      {p.label}
+                      {p.label.length * (labelFontSize * 0.6) > p.w * 0.9 
+                        ? p.label.substring(0, Math.floor((p.w * 0.8) / (labelFontSize * 0.6))) + '...'
+                        : p.label}
                     </text>
-                    <text
-                      x={p.x + 12}
-                      y={p.y + 54}
-                      fontSize={22}
-                      fontWeight={600}
-                      fill="hsl(0 0% 100% / 0.86)"
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      {mmToLabel(p.w, unit)} × {mmToLabel(p.h, unit)}
-                    </text>
-                  </>
-                ) : null}
+                    {showDims && (
+                      <text
+                        x={p.x + p.w / 2}
+                        y={p.y + p.h / 2 + labelFontSize/1.5}
+                        fontSize={dimFontSize}
+                        fontWeight={600}
+                        fill="rgba(255,255,255,0.85)"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="select-none"
+                      >
+                        {mmToLabel(p.w, unit)} × {mmToLabel(p.h, unit)}
+                      </text>
+                    )}
+                  </g>
+                )}
               </g>
             )
           })}
         </svg>
 
-        {hover ? (
+        {hover && (
           <TooltipPortal
             clientX={hover.clientX}
             clientY={hover.clientY}
             placement={hover.placement}
             unit={unit}
           />
-        ) : null}
+        )}
       </div>
     </div>
   )
 }
-

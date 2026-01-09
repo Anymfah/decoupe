@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronUp, Copy, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, RotateCcw, Trash2, Palette, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
 import { useMemo, useRef } from 'react'
 import clsx from 'clsx'
 
 import type { RotationMode } from '../lib/packing'
 import { formatLength, toMm } from '../lib/units'
 import { duplicateCutId, useAppDispatch, useAppState } from '../hooks/useAppState'
+import { Input, IconButton, Stepper, Tooltip } from './ui'
 
 function parseUserNumber(raw: string) {
   const v = Number(raw.replace(',', '.'))
@@ -23,48 +24,27 @@ function RotationSegment({
   return (
     <div
       className={clsx(
-        'flex h-9 w-full items-center rounded-xl border bg-bg/60 p-1 shadow-soft',
+        'flex h-9 w-full items-center rounded-apple-md bg-black/5 dark:bg-white/5 p-1 border border-black/5 dark:border-white/5',
         disabled && 'opacity-60',
       )}
       role="group"
       aria-label="Rotation"
     >
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange('inherit')}
-        aria-pressed={value === 'inherit'}
-        className={clsx(
-          'h-7 flex-1 rounded-lg px-2 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          value === 'inherit' ? 'bg-surface shadow-soft' : 'text-muted hover:text-text',
-        )}
-      >
-        Auto
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange('allowed')}
-        aria-pressed={value === 'allowed'}
-        className={clsx(
-          'h-7 flex-1 rounded-lg px-2 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          value === 'allowed' ? 'bg-surface shadow-soft' : 'text-muted hover:text-text',
-        )}
-      >
-        On
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange('forbidden')}
-        aria-pressed={value === 'forbidden'}
-        className={clsx(
-          'h-7 flex-1 rounded-lg px-2 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          value === 'forbidden' ? 'bg-surface shadow-soft' : 'text-muted hover:text-text',
-        )}
-      >
-        Off
-      </button>
+      {(['inherit', 'allowed', 'forbidden'] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(mode)}
+          aria-pressed={value === mode}
+          className={clsx(
+            'h-full flex-1 rounded-apple-sm px-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-apple-out',
+            value === mode ? 'bg-accent text-white shadow-sm' : 'text-muted hover:text-text',
+          )}
+        >
+          {mode === 'inherit' ? 'Auto' : mode === 'allowed' ? 'On' : 'Off'}
+        </button>
+      ))}
     </div>
   )
 }
@@ -77,7 +57,7 @@ function getContrastColor(hex: string) {
   const g = (n >> 8) & 255
   const b = n & 255
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.55 ? '#1d1d1f' : '#ffffff'
+  return luminance > 0.55 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.95)'
 }
 
 export function CutRow({
@@ -115,16 +95,6 @@ export function CutRow({
 
   const disabled = cut.quantity <= 0
 
-  const inputBase =
-    'mt-1 h-9 w-full rounded-xl border bg-bg/50 px-3 text-sm text-text shadow-soft outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/30'
-
-  const autoColor = useMemo(() => {
-    const s = cut.id
-    let h = 0
-    for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0
-    return `hsl(${h % 360} 82% 55%)`
-  }, [cut.id])
-
   const autoColorHex = useMemo(() => {
     const s = cut.id
     let h = 0
@@ -145,181 +115,186 @@ export function CutRow({
   }, [cut.id])
 
   const displayColorHex = cut.colorHex ?? autoColorHex
-  const displayColor = cut.colorHex ?? autoColor
   const textColor = getContrastColor(displayColorHex)
-  const headerLabel = cut.label.trim() || `Découpe ${cut.id.slice(0, 4)}`
+  const headerLabel = cut.label.trim() || `P-${cut.id.slice(0, 4)}`
 
   return (
-    <div className={clsx('overflow-hidden rounded-xl border shadow-soft', disabled && 'opacity-70')}>
-      <button
-        type="button"
+    <div className={clsx(
+      'overflow-hidden rounded-apple-xl border transition-all duration-500 ease-apple-out',
+      isExpanded ? 'border-accent/20 shadow-lg' : 'border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 shadow-sm',
+      disabled && 'opacity-60 grayscale-[0.2]'
+    )}>
+      <div
+        className="flex w-full items-center gap-3 px-3 py-2 text-left cursor-pointer group relative overflow-hidden"
+        style={{ background: displayColorHex, color: textColor }}
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
-        style={{ background: displayColor, color: textColor }}
-        aria-expanded={isExpanded}
       >
-        <span
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg"
-          style={{ background: 'rgba(255,255,255,0.2)' }}
-          aria-hidden="true"
-        >
-          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </span>
+        {/* Very subtle gloss highlight */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/10 pointer-events-none" />
+        
+        <div className="relative z-10 flex items-center gap-2.5 w-full">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 backdrop-blur-sm shrink-0 transition-transform group-hover:scale-110">
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-bold">{headerLabel}</div>
-          <div className="mt-0.5 text-xs opacity-80">
-            {formatLength(cut.widthMm, unit)} × {formatLength(cut.heightMm, unit)} {unit} · × {cut.quantity}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-bold tracking-tight">{headerLabel}</div>
+            <div className="text-[10px] font-bold opacity-70 flex items-center gap-1.5">
+              <span>{formatLength(cut.widthMm, unit)} × {formatLength(cut.heightMm, unit)}</span>
+              <span className="opacity-30">|</span>
+              <span>× {cut.quantity}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="p-1.5 rounded-apple-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              onClick={() => colorInputRef.current?.click()}
+              title="Couleur"
+            >
+              <Palette className="w-3.5 h-3.5" />
+            </button>
+            <input
+              ref={colorInputRef}
+              type="color"
+              className="sr-only"
+              value={displayColorHex}
+              onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: e.target.value } })}
+            />
+
+            <button
+              type="button"
+              className="p-1.5 rounded-apple-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              onClick={() => dispatch({ type: 'DUPLICATE_CUT', id: cut.id, newId: duplicateCutId() })}
+              title="Dupliquer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              className="p-1.5 rounded-apple-md hover:bg-red-500/10 hover:text-red-600 transition-colors"
+              onClick={() => dispatch({ type: 'REMOVE_CUT', id: cut.id })}
+              title="Supprimer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-lg transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
-            onClick={() => colorInputRef.current?.click()}
-            aria-label="Choisir une couleur"
-            title="Couleur"
-          >
-            <span
-              className="h-4 w-4 rounded border border-white/40"
-              style={{ background: displayColorHex }}
-            />
-          </button>
-          <input
-            ref={colorInputRef}
-            type="color"
-            className="sr-only"
-            value={displayColorHex}
-            onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: e.target.value } })}
+      {isExpanded && (
+        <div className="bg-panel-strong/40 backdrop-blur-md p-4 space-y-4 animate-slide-up border-t border-black/5 dark:border-white/5">
+          <Input
+            label="Désignation"
+            value={cut.label}
+            onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { label: e.target.value } })}
+            placeholder="Ex: Étagère"
+            className="h-9"
           />
 
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-lg transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
-            onClick={() => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: undefined } })}
-            aria-label="Couleur automatique"
-            title="Auto"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-lg transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
-            onClick={() => dispatch({ type: 'DUPLICATE_CUT', id: cut.id, newId: duplicateCutId() })}
-            aria-label="Dupliquer"
-            title="Dupliquer"
-          >
-            <Copy className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-lg transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-            style={{ background: 'rgba(0,0,0,0.15)' }}
-            onClick={() => dispatch({ type: 'REMOVE_CUT', id: cut.id })}
-            aria-label="Supprimer"
-            title="Supprimer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </button>
-
-      {isExpanded ? (
-        <div className="space-y-3 bg-bg/60 p-4">
-          <div>
-            <label className="text-xs font-semibold text-muted" htmlFor={`cut-label-${cut.id}`}>
-              Nom (optionnel)
-            </label>
-            <input
-              id={`cut-label-${cut.id}`}
-              className={inputBase}
-              value={cut.label}
-              onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { label: e.target.value } })}
-              placeholder="Ex: étagère"
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted" htmlFor={`cut-w-${cut.id}`}>
-                Largeur ({unit})
-              </label>
-              <input
-                id={`cut-w-${cut.id}`}
-                inputMode="decimal"
-                className={clsx(inputBase, 'font-mono')}
+            <div className="relative group">
+              <Input
+                label={`Largeur (${unit})`}
                 value={formatLength(cut.widthMm, unit)}
                 onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
+                className="font-mono h-9 pr-16"
               />
+              <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => {
+                    const next = Math.max(0, toMm(parseUserNumber(formatLength(cut.widthMm, unit)) - 1, unit));
+                    dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { widthMm: next } });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </button>
+                <button 
+                  onClick={() => {
+                    const next = toMm(parseUserNumber(formatLength(cut.widthMm, unit)) + 1, unit);
+                    dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { widthMm: next } });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted" htmlFor={`cut-h-${cut.id}`}>
-                Hauteur ({unit})
-              </label>
-              <input
-                id={`cut-h-${cut.id}`}
-                inputMode="decimal"
-                className={clsx(inputBase, 'font-mono')}
+            <div className="relative group">
+              <Input
+                label={`Hauteur (${unit})`}
                 value={formatLength(cut.heightMm, unit)}
                 onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
+                className="font-mono h-9 pr-16"
+              />
+              <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => {
+                    const next = Math.max(0, toMm(parseUserNumber(formatLength(cut.heightMm, unit)) - 1, unit));
+                    dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { heightMm: next } });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </button>
+                <button 
+                  onClick={() => {
+                    const next = toMm(parseUserNumber(formatLength(cut.heightMm, unit)) + 1, unit);
+                    dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { heightMm: next } });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 items-end">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Quantité</label>
+              <Stepper value={cut.quantity} onChange={onChangeQty} />
+            </div>
+            
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Rotation</label>
+                <Tooltip content="Auto: suit le réglage global. On/Off: force ou interdit la rotation pour cette pièce.">
+                  <HelpCircle className="w-3 h-3 text-muted/50" />
+                </Tooltip>
+              </div>
+              <RotationSegment
+                value={cut.rotation}
+                onChange={(rotation) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { rotation } })}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-semibold text-muted" htmlFor={`cut-qty-${cut.id}`}>
-                Quantité
-              </label>
-              <div className="mt-1 inline-flex h-9 w-full items-center gap-1 rounded-xl border bg-bg/50 px-1 shadow-soft">
-                <button
-                  type="button"
-                  className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-bg/60 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  onClick={() => onChangeQty(cut.quantity - 1)}
-                  aria-label="Diminuer"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <input
-                  id={`cut-qty-${cut.id}`}
-                  inputMode="numeric"
-                  className="h-7 w-full rounded-lg bg-transparent px-2 text-center text-sm font-mono text-text outline-none"
-                  value={String(cut.quantity)}
-                  onChange={(e) => onChangeQty(parseUserNumber(e.target.value))}
-                />
-                <button
-                  type="button"
-                  className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-bg/60 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  onClick={() => onChangeQty(cut.quantity + 1)}
-                  aria-label="Augmenter"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+          <div className="flex items-center justify-between pt-2 border-t border-black/[0.03] dark:border-white/[0.03]">
+            <Tooltip 
+              content="Indique si la rotation est active pour cette pièce d'après vos réglages."
+              wrapperClassName="shrink-0"
+            >
+              <div className="text-[10px] font-bold text-muted2 uppercase tracking-[0.15em] flex items-center gap-2 cursor-help">
+                <div className={clsx("w-1.5 h-1.5 rounded-full shadow-sm", rotationEffective ? "bg-success" : "bg-danger")} />
+                Eff: {rotationEffective ? 'Autorisée' : 'Bloquée'}
               </div>
-            </div>
-
-            <div>
-              <div className="text-xs font-semibold text-muted">Rotation</div>
-              <div className="mt-1">
-                <RotationSegment
-                  value={cut.rotation}
-                  onChange={(rotation) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { rotation } })}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted">
-            Rotation effective: {rotationEffective ? 'autorisée' : 'interdite'}
+            </Tooltip>
+            
+            <button
+              type="button"
+              className="text-[10px] font-bold text-muted2 uppercase tracking-[0.15em] hover:text-accent transition-colors flex items-center gap-1.5"
+              onClick={() => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: undefined } })}
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset couleur
+            </button>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

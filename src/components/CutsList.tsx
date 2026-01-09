@@ -1,19 +1,22 @@
-import { Plus } from 'lucide-react'
+import { Plus, ListTodo, AlertCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { createEmptyCut, useAppDispatch, useAppState } from '../hooks/useAppState'
 import { CutRow } from './CutRow'
+import { Button, SectionTitle } from './ui'
 
 export function CutsList() {
   const { cuts, board } = useAppState()
   const dispatch = useAppDispatch()
 
   const [visibleCount, setVisibleCount] = useState(50)
-  const [expandedId, setExpandedId] = useState<string | null>(() => cuts[0]?.id ?? null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (expandedId && cuts.some((c) => c.id === expandedId)) return
-    setExpandedId(cuts[0]?.id ?? null)
+    // Si l'élément expansé n'existe plus (suppression), on reset
+    if (expandedId && !cuts.some((c) => c.id === expandedId)) {
+      setExpandedId(null)
+    }
   }, [cuts, expandedId])
 
   const { totalTypes, totalPieces } = useMemo(() => {
@@ -25,37 +28,57 @@ export function CutsList() {
   const hasMore = visibleCuts.length < cuts.length
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-muted">Étape 2</div>
-          <div className="mt-1 text-lg font-semibold">Découpes</div>
-          <div className="mt-1 text-sm text-muted">
-            {totalTypes} type{totalTypes > 1 ? 's' : ''} · {totalPieces} pièce{totalPieces > 1 ? 's' : ''} · unité{' '}
-            {board.unit}
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+            <ListTodo className="w-4 h-4" />
           </div>
+          <SectionTitle className="mb-0">Découpes</SectionTitle>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-xl border bg-surface px-3 text-sm font-semibold shadow-soft transition duration-300 ease-out hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => {
             const nextCut = createEmptyCut({ label: `P${cuts.length + 1}` })
             dispatch({ type: 'ADD_CUT', cut: nextCut })
             setExpandedId(nextCut.id)
           }}
+          className="shadow-sm"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 mr-1.5" />
           Ajouter
-        </button>
+        </Button>
       </div>
 
-      {totalPieces > 5000 ? (
-        <div className="rounded-xl border border-accent/30 bg-bg/60 p-3 text-sm text-muted">
-          Quantité totale élevée: l’optimisation peut être limitée automatiquement pour rester fluide.
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-muted2 uppercase tracking-widest">Modèles</span>
+          <span className="text-sm font-semibold">{totalTypes}</span>
         </div>
-      ) : null}
+        <div className="w-px h-6 bg-white/10" />
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-muted2 uppercase tracking-widest">Pièces</span>
+          <span className="text-sm font-semibold">{totalPieces}</span>
+        </div>
+        <div className="w-px h-6 bg-white/10" />
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-muted2 uppercase tracking-widest">Unité</span>
+          <span className="text-sm font-semibold text-accent">{board.unit}</span>
+        </div>
+      </div>
 
-      <div className="space-y-3">
+      {totalPieces > 2000 && (
+        <div className="flex items-start gap-3 p-3 rounded-apple-lg bg-warning/10 border border-warning/20 animate-pulse">
+          <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+          <p className="text-[11px] text-warning font-medium leading-relaxed">
+            Quantité élevée: le moteur d'optimisation peut réduire la précision pour maintenir la fluidité.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
         {visibleCuts.map((c) => (
           <CutRow
             key={c.id}
@@ -64,20 +87,26 @@ export function CutsList() {
             onToggle={() => setExpandedId((prev) => (prev === c.id ? null : c.id))}
           />
         ))}
+        {cuts.length === 0 && (
+          <div className="text-center py-12 rounded-apple-xl bg-white/[0.02] border border-dashed border-white/10">
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
+              <Plus className="w-6 h-6 text-muted" />
+            </div>
+            <p className="text-sm text-muted">Aucune découpe définie</p>
+          </div>
+        )}
       </div>
 
-      {hasMore ? (
-        <div className="flex items-center justify-center">
-          <button
-            type="button"
-            className="inline-flex h-10 items-center justify-center rounded-xl border bg-surface px-4 text-sm font-semibold shadow-soft transition duration-300 ease-out hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            onClick={() => setVisibleCount((n) => Math.min(cuts.length, n + 50))}
-          >
-            Afficher plus
-          </button>
-        </div>
-      ) : null}
+      {hasMore && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full py-3"
+          onClick={() => setVisibleCount((n) => Math.min(cuts.length, n + 50))}
+        >
+          Afficher les {cuts.length - visibleCount} suivantes
+        </Button>
+      )}
     </div>
   )
 }
-
