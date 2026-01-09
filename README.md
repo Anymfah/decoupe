@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="src/assets/logo-light.png" alt="ezcut.be logo" width="240" />
+  <img src="src/assets/logo-med.png" alt="ezcut.be logo" width="240" />
 
   # ezcut.be
   

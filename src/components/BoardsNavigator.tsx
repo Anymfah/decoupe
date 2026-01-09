@@ -71,8 +71,8 @@ export function BoardsNavigator({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="hidden md:flex flex-col h-full">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="hidden md:flex flex-col">
+        <div className="flex flex-wrap items-center gap-2">
           {plans.map((p, i) => (
             <button
               key={p.boardIndex}
@@ -99,16 +99,16 @@ export function BoardsNavigator({
             </button>
           ))}
         </div>
+      </div>
 
-        <div className="flex-1 min-h-0">
-          <BoardViewer
-            board={board}
-            plan={plans[safeIndex] ?? null}
-            unit={unit}
-            gridEnabled={gridEnabled}
-            pieceColorById={pieceColorById}
-          />
-        </div>
+      <div className="hidden md:block mt-4">
+        <BoardViewer
+          board={board}
+          plan={plans[safeIndex] ?? null}
+          unit={unit}
+          gridEnabled={gridEnabled}
+          pieceColorById={pieceColorById}
+        />
       </div>
 
       <div className="md:hidden flex flex-col h-full">

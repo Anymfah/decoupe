@@ -122,22 +122,24 @@ export default function App() {
               </div>
 
               <div className={clsx(
-                'flex-1 grid gap-6 min-h-0',
-                placementsOpen ? 'xl:grid-cols-[1fr_320px]' : 'grid-cols-1'
+                'flex-1 flex flex-col gap-6 min-h-0',
+                placementsOpen ? 'xl:grid xl:grid-cols-[1fr_320px]' : 'flex flex-col'
               )}>
-                <div className="relative bg-black/5 dark:bg-black/40 rounded-apple-lg border border-black/5 dark:border-white/5 overflow-hidden h-[500px]">
-                  <BoardsNavigator
-                    board={state.board}
-                    unit={state.board.unit}
-                    gridEnabled={state.gridEnabled}
-                    pieceColorById={pieceColorById}
-                    plans={result.boards}
-                    activeIndex={state.activeBoardIndex}
-                    onChangeActiveIndex={(index) => dispatch({ type: 'SET_ACTIVE_BOARD_INDEX', value: index })}
-                  />
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="mb-4">
+                    <BoardsNavigator
+                      board={state.board}
+                      unit={state.board.unit}
+                      gridEnabled={state.gridEnabled}
+                      pieceColorById={pieceColorById}
+                      plans={result.boards}
+                      activeIndex={state.activeBoardIndex}
+                      onChangeActiveIndex={(index) => dispatch({ type: 'SET_ACTIVE_BOARD_INDEX', value: index })}
+                    />
+                  </div>
                   
                   {result.boards.length === 0 && !isPending && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/5 backdrop-blur-[1px]">
+                    <div className="relative bg-black/5 dark:bg-black/40 rounded-apple-lg border border-black/5 dark:border-white/5 overflow-hidden h-[500px] flex flex-col items-center justify-center p-8 text-center backdrop-blur-[1px]">
                       <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10 shadow-sm">
                         <Play className="w-6 h-6 text-accent opacity-40" />
                       </div>

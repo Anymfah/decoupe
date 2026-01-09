@@ -238,10 +238,10 @@ export function BoardViewer({
         </Button>
       </div>
 
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-apple-lg border border-white/5 bg-black/20 shadow-inner">
+      <div className="relative h-[500px] flex-1 overflow-hidden rounded-apple-lg border border-black/5 dark:border-white/5 bg-black/5 dark:bg-black/40 shadow-inner p-2">
         <svg
           ref={svgRef}
-          className="h-full w-full"
+          className="h-full w-full drop-shadow-2xl"
           viewBox={`0 0 ${boardW} ${boardH}`}
           preserveAspectRatio="xMidYMid meet"
           role="img"
@@ -249,7 +249,7 @@ export function BoardViewer({
           onPointerLeave={() => setHover(null)}
         >
           {/* Main Board Area */}
-          <rect x={0} y={0} width={boardW} height={boardH} fill="#0A0E14" />
+          <rect x={0} y={0} width={boardW} height={boardH} fill="#0A0E14" rx={4} ry={4} />
 
           {/* Board border */}
           <rect
@@ -258,8 +258,10 @@ export function BoardViewer({
             width={boardW}
             height={boardH}
             fill="transparent"
-            stroke="rgba(255, 255, 255, 0.1)"
-            strokeWidth={4}
+            stroke="rgba(255, 255, 255, 0.08)"
+            strokeWidth={2}
+            rx={4}
+            ry={4}
           />
 
           {/* Usable Area (Margin) */}
