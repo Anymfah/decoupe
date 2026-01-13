@@ -79,7 +79,7 @@ export function CutsList() {
         </div>
       )}
 
-      <div className="space-y-2 md:space-y-2.5 max-h-[50vh] md:max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+      <div className="space-y-2 md:space-y-2.5 md:max-h-[600px] md:overflow-y-auto md:pr-1 md:custom-scrollbar">
         {visibleCuts.map((c) => (
           <CutRow
             key={c.id}

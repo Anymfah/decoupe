@@ -154,8 +154,8 @@ export function BoardsNavigator({
         <div
           ref={containerRef}
           onScroll={onScroll}
-          className="flex-1 flex snap-x snap-mandatory overflow-x-auto pb-2 scrollbar-hide scroll-smooth touch-pan-x overscroll-x-contain"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          className="flex-1 flex snap-x snap-mandatory overflow-x-auto pb-2 scrollbar-hide overscroll-x-contain"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', touchAction: 'pan-y pan-x' }}
         >
           {plans.map((p) => (
             <div 
