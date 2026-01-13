@@ -40,6 +40,7 @@ export function CutsList() {
         <Button
           variant="primary"
           size="sm"
+          type="button"
           onClick={() => {
             const nextCut = createEmptyCut({ label: `P${cuts.length + 1}` })
             dispatch({ type: 'ADD_CUT', cut: nextCut })
@@ -88,12 +89,20 @@ export function CutsList() {
           />
         ))}
         {cuts.length === 0 && (
-          <div className="text-center py-12 rounded-apple-xl bg-white/[0.02] border border-dashed border-white/10">
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
-              <Plus className="w-6 h-6 text-muted" />
+          <button
+            onClick={() => {
+              const nextCut = createEmptyCut({ label: `P${cuts.length + 1}` })
+              dispatch({ type: 'ADD_CUT', cut: nextCut })
+              setExpandedId(nextCut.id)
+            }}
+            className="w-full text-center py-12 rounded-apple-xl bg-white/[0.02] border border-dashed border-white/10 hover:bg-white/[0.04] hover:border-white/20 transition-all group"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <Plus className="w-6 h-6 text-muted group-hover:text-accent" />
             </div>
-            <p className="text-sm text-muted">Aucune découpe définie</p>
-          </div>
+            <p className="text-sm text-muted group-hover:text-text transition-colors">Aucune découpe définie</p>
+            <p className="text-[11px] text-muted/50 mt-1">Cliquez ici pour ajouter votre première pièce</p>
+          </button>
         )}
       </div>
 

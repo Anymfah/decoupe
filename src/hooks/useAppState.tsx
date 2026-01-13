@@ -62,35 +62,10 @@ function normalizeColorHex(value: unknown): string | undefined {
   return v.toUpperCase()
 }
 
-function makeDefaultCuts(): CutPiece[] {
-  const a = createId()
-  const b = createId()
-  return [
-    {
-      id: a,
-      label: 'P1',
-      widthMm: 600,
-      heightMm: 400,
-      quantity: 4,
-      rotation: 'inherit',
-      colorHex: undefined,
-    },
-    {
-      id: b,
-      label: 'P2',
-      widthMm: 800,
-      heightMm: 300,
-      quantity: 2,
-      rotation: 'inherit',
-      colorHex: undefined,
-    },
-  ]
-}
-
 export const defaultAppState: AppState = {
   board: defaultBoard,
   globalRotationDefault: true,
-  cuts: makeDefaultCuts(),
+  cuts: [],
   stock: [],
   activeBoardIndex: 0,
   gridEnabled: true,
