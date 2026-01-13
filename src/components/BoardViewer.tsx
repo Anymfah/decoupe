@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom'
 
 import type { BoardConfig, BoardPlan, Placement, Rect, Unit } from '../lib/packing'
 import { formatLength } from '../lib/units'
-import { Button } from './ui'
 
 function TooltipPortal({
   clientX,
