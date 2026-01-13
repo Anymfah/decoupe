@@ -26,7 +26,7 @@ export function BoardsNavigator({
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const isScrollingRef = useRef(false)
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
   // Measure container width

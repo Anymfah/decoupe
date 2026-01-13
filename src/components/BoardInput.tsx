@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { createEmptyStock, useAppDispatch, useAppState } from '../hooks/useAppState'
 import type { StockPiece } from '../lib/packing'
 import { formatLength, toMm } from '../lib/units'
-import { Input, Button, IconButton, SectionTitle, Stepper, Toggle, Tooltip } from './ui'
+import { Button, SectionTitle, Toggle, Tooltip } from './ui'
 
 type FieldError = {
   width?: string
