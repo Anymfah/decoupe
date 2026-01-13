@@ -144,4 +144,40 @@
   .ease-apple-out {
     transition-timing-function: cubic-bezier(0, 0, 0, 1);
   }
+
+  /* Safe area for mobile devices (notch, bottom bar) */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Mobile-specific utilities */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile input sizing */
+  @media (max-width: 768px) {
+    input, select, textarea, button {
+      font-size: 16px !important; /* Prevents iOS zoom on focus */
+    }
+  }
+
+  /* Bottom padding for mobile nav */
+  .mobile-nav-padding {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
 }

@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Box, Percent, Maximize, Scissors } from 'lucide-react'
 import { useMemo } from 'react'
+import clsx from 'clsx'
 
 import type { PackingResult } from '../lib/packing'
 import { KpiPill, GlassCard, cn, Tooltip } from './ui'
@@ -14,6 +15,52 @@ function formatAreaMm2(mm2: number) {
   const m2 = mm2 / 1_000_000
   const rounded = Math.round(m2 * 1000) / 1000
   return `${rounded} m²`
+}
+
+// Mobile-optimized compact summary
+export function MobileSummary({ result }: { result: PackingResult }) {
+  const { boardCount, unplacedCount } = useMemo(() => {
+    const boards = result.boards
+    const unplaced = result.unplaced.reduce((sum, p) => sum + Math.max(0, p.quantity), 0)
+    return {
+      boardCount: boards.length,
+      unplacedCount: unplaced,
+    }
+  }, [result.boards, result.unplaced])
+
+  const efficiencyColor = result.totalUtilization > 80 ? 'text-success' : result.totalUtilization > 50 ? 'text-accent' : 'text-warning'
+
+  return (
+    <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+      {/* Boards count */}
+      <div className="flex-1 min-w-[70px] p-2.5 bg-black/[0.03] dark:bg-white/[0.03] rounded-apple-lg border border-black/[0.05] dark:border-white/[0.05]">
+        <div className="text-lg font-bold text-accent leading-none">{boardCount}</div>
+        <div className="text-[9px] font-bold text-muted uppercase tracking-wider mt-0.5">Planches</div>
+      </div>
+
+      {/* Efficiency */}
+      <div className="flex-1 min-w-[70px] p-2.5 bg-black/[0.03] dark:bg-white/[0.03] rounded-apple-lg border border-black/[0.05] dark:border-white/[0.05]">
+        <div className={clsx("text-lg font-bold leading-none", efficiencyColor)}>
+          {formatPercent(result.totalUtilization)}
+        </div>
+        <div className="text-[9px] font-bold text-muted uppercase tracking-wider mt-0.5">Efficacité</div>
+      </div>
+
+      {/* Used area */}
+      <div className="flex-1 min-w-[80px] p-2.5 bg-black/[0.03] dark:bg-white/[0.03] rounded-apple-lg border border-black/[0.05] dark:border-white/[0.05]">
+        <div className="text-lg font-bold text-text leading-none">{formatAreaMm2(result.totalUsedAreaMm2)}</div>
+        <div className="text-[9px] font-bold text-muted uppercase tracking-wider mt-0.5">Utile</div>
+      </div>
+
+      {/* Waste - only show if there's unplaced */}
+      {unplacedCount > 0 && (
+        <div className="flex-1 min-w-[70px] p-2.5 bg-danger/5 rounded-apple-lg border border-danger/10">
+          <div className="text-lg font-bold text-danger leading-none">{unplacedCount}</div>
+          <div className="text-[9px] font-bold text-danger/70 uppercase tracking-wider mt-0.5">Non placé</div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function Summary({
@@ -82,22 +129,22 @@ export function StatusPanel({ result }: { result: PackingResult }) {
 
   return (
     <GlassCard className={cn(
-      "border-black/[0.03] dark:border-white/[0.03] mt-4",
+      "border-black/[0.03] dark:border-white/[0.03] mt-4 mr-14 md:mr-0",
       hasUnplaced ? "bg-danger/[0.02] border-danger/10" : "bg-success/[0.02] border-success/10"
     )}>
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5">
-        <div className="flex items-center gap-4">
-          <div className={hasUnplaced ? "text-danger" : "text-success"}>
-            {hasUnplaced ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 md:p-5">
+        <div className="flex items-center gap-3">
+          <div className={clsx("shrink-0", hasUnplaced ? "text-danger" : "text-success")}>
+            {hasUnplaced ? <AlertTriangle className="w-5 h-5 md:w-8 md:h-8" /> : <CheckCircle2 className="w-5 h-5 md:w-8 md:h-8" />}
           </div>
-          <div>
-            <h3 className="text-lg font-bold tracking-tight">
+          <div className="min-w-0">
+            <h3 className="text-sm md:text-lg font-bold tracking-tight">
               {hasUnplaced ? "Optimisation incomplète" : "Optimisation réussie"}
             </h3>
-            <p className="text-sm text-muted">
+            <p className="text-[11px] md:text-sm text-muted">
               {hasUnplaced 
-                ? `${result.unplaced.length} type(s) de pièces n'ont pas pu être placés.` 
-                : "Toutes les pièces ont été placées sur les planches disponibles."}
+                ? `${result.unplaced.length} type(s) non placés.` 
+                : "Toutes les pièces placées."}
             </p>
           </div>
         </div>

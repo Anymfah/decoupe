@@ -80,13 +80,14 @@ export function ImportExport() {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+    <div className="space-y-4">
+      {/* Action buttons grid - 2x2 on mobile */}
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="secondary"
           size="sm"
           onClick={onExport}
-          className="h-9 px-3"
+          className="h-11 px-3 w-full touch-manipulation"
           title="Exporter en JSON"
         >
           <FileDown className="h-4 w-4 mr-2" />
@@ -97,7 +98,7 @@ export function ImportExport() {
           variant="secondary"
           size="sm"
           onClick={onImportClick}
-          className="h-9 px-3"
+          className="h-11 px-3 w-full touch-manipulation"
           title="Importer un fichier JSON"
         >
           <FileUp className="h-4 w-4 mr-2" />
@@ -108,20 +109,18 @@ export function ImportExport() {
           variant="secondary"
           size="sm"
           onClick={onShare}
-          className="h-9 px-3"
+          className="h-11 px-3 w-full touch-manipulation"
           title="Partager la configuration via URL"
         >
           <Share2 className="h-4 w-4 mr-2 text-accent" />
           Partager
         </Button>
 
-        <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
-
         <Button
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="h-9 px-3 text-danger/70 hover:text-danger hover:bg-danger/10"
+          className="h-11 px-3 w-full text-danger/70 hover:text-danger hover:bg-danger/10 touch-manipulation border border-danger/10"
           title="Réinitialiser le projet"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -137,10 +136,11 @@ export function ImportExport() {
         />
       </div>
 
-      <div className="text-xs font-bold uppercase tracking-widest min-h-[1.5em] flex items-center">
+      {/* Status message */}
+      <div className="text-xs font-bold uppercase tracking-widest text-center min-h-[1.5em] flex items-center justify-center">
         {importError && <span className="text-danger animate-pulse">{importError}</span>}
         {!importError && shareStatus && <span className="text-accent animate-fade-in">{shareStatus}</span>}
-        {!importError && !shareStatus && <span className="text-muted2 opacity-50">Gestion de projet</span>}
+        {!importError && !shareStatus && <span className="text-muted2 opacity-50">Sauvegardez ou partagez votre projet</span>}
       </div>
     </div>
   )

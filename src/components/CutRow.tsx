@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Copy, RotateCcw, Trash2, Palette, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, RotateCcw, Trash2, Palette, Minus, Plus, HelpCircle } from 'lucide-react'
 import { useMemo, useRef } from 'react'
 import clsx from 'clsx'
 
@@ -24,7 +24,7 @@ function RotationSegment({
   return (
     <div
       className={clsx(
-        'flex h-9 w-full items-center rounded-apple-md bg-black/5 dark:bg-white/5 p-1 border border-black/5 dark:border-white/5',
+        'flex h-[46px] w-full items-center rounded-apple-md bg-black/5 dark:bg-white/5 p-0.5 border border-black/[0.05] dark:border-white/[0.05]',
         disabled && 'opacity-60',
       )}
       role="group"
@@ -38,11 +38,13 @@ function RotationSegment({
           onClick={() => onChange(mode)}
           aria-pressed={value === mode}
           className={clsx(
-            'h-full flex-1 rounded-apple-sm px-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-apple-out',
+            'h-full flex-1 rounded-apple-sm transition-all duration-300 ease-apple-out flex items-center justify-center',
             value === mode ? 'bg-accent text-white shadow-sm' : 'text-muted hover:text-text',
           )}
         >
-          {mode === 'inherit' ? 'Auto' : mode === 'allowed' ? 'On' : 'Off'}
+          <span style={{ fontSize: '12px', transform: 'scale(0.85)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {mode === 'inherit' ? 'Auto' : mode === 'allowed' ? 'On' : 'Off'}
+          </span>
         </button>
       ))}
     </div>
@@ -195,72 +197,87 @@ export function CutRow({
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="relative group">
-              <Input
-                label={`Largeur (${unit})`}
-                value={formatLength(cut.widthMm, unit)}
-                onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
-                className="font-mono h-9 pr-16"
-              />
-              <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Width input with inline stepper */}
+            <div>
+              <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+                Largeur ({unit})
+              </label>
+              <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
                 <button 
+                  type="button"
                   onClick={() => {
                     const next = Math.max(0, toMm(parseUserNumber(formatLength(cut.widthMm, unit)) - 1, unit));
                     dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { widthMm: next } });
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
                 >
-                  <ChevronLeft className="w-3 h-3" />
+                  <Minus className="w-4 h-4" />
                 </button>
+                <input 
+                  type="text"
+                  inputMode="decimal"
+                  value={formatLength(cut.widthMm, unit)}
+                  onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
+                  className="flex-1 min-w-0 bg-transparent text-center text-sm font-mono font-bold outline-none h-10"
+                />
                 <button 
+                  type="button"
                   onClick={() => {
                     const next = toMm(parseUserNumber(formatLength(cut.widthMm, unit)) + 1, unit);
                     dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { widthMm: next } });
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
                 >
-                  <ChevronRight className="w-3 h-3" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
-            <div className="relative group">
-              <Input
-                label={`Hauteur (${unit})`}
-                value={formatLength(cut.heightMm, unit)}
-                onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
-                className="font-mono h-9 pr-16"
-              />
-              <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+
+            {/* Height input with inline stepper */}
+            <div>
+              <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+                Hauteur ({unit})
+              </label>
+              <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
                 <button 
+                  type="button"
                   onClick={() => {
                     const next = Math.max(0, toMm(parseUserNumber(formatLength(cut.heightMm, unit)) - 1, unit));
                     dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { heightMm: next } });
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
                 >
-                  <ChevronLeft className="w-3 h-3" />
+                  <Minus className="w-4 h-4" />
                 </button>
+                <input 
+                  type="text"
+                  inputMode="decimal"
+                  value={formatLength(cut.heightMm, unit)}
+                  onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
+                  className="flex-1 min-w-0 bg-transparent text-center text-sm font-mono font-bold outline-none h-10"
+                />
                 <button 
+                  type="button"
                   onClick={() => {
                     const next = toMm(parseUserNumber(formatLength(cut.heightMm, unit)) + 1, unit);
                     dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { heightMm: next } });
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                  className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
                 >
-                  <ChevronRight className="w-3 h-3" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 items-end">
+          <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Quantité</label>
               <Stepper value={cut.quantity} onChange={onChangeQty} />
             </div>
             
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="flex items-center gap-1">
                 <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Rotation</label>
                 <Tooltip content="Auto: suit le réglage global. On/Off: force ou interdit la rotation pour cette pièce.">
                   <HelpCircle className="w-3 h-3 text-muted/50" />
@@ -278,7 +295,7 @@ export function CutRow({
               content="Indique si la rotation est active pour cette pièce d'après vos réglages."
               wrapperClassName="shrink-0"
             >
-              <div className="text-[10px] font-bold text-muted2 uppercase tracking-[0.15em] flex items-center gap-2 cursor-help">
+              <div className="text-[9px] font-bold text-muted2 uppercase tracking-[0.1em] flex items-center gap-1.5 cursor-help">
                 <div className={clsx("w-1.5 h-1.5 rounded-full shadow-sm", rotationEffective ? "bg-success" : "bg-danger")} />
                 Eff: {rotationEffective ? 'Autorisée' : 'Bloquée'}
               </div>
@@ -286,10 +303,10 @@ export function CutRow({
             
             <button
               type="button"
-              className="text-[10px] font-bold text-muted2 uppercase tracking-[0.15em] hover:text-accent transition-colors flex items-center gap-1.5"
+              className="text-[8px] font-bold text-muted uppercase tracking-wide px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-accent/10 hover:text-accent hover:border-accent/30 active:scale-95 transition-all flex items-center gap-1"
               onClick={() => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: undefined } })}
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-2.5 h-2.5" />
               Reset couleur
             </button>
           </div>

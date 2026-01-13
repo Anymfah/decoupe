@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import clsx from 'clsx'
 
 import type { BoardConfig, BoardPlan, Unit } from '../lib/packing'
@@ -25,36 +25,76 @@ export function BoardsNavigator({
   const safeIndex = Math.max(0, Math.min(count - 1, activeIndex))
 
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const lastIndexRef = useRef<number>(safeIndex)
+  const isScrollingRef = useRef(false)
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const [containerWidth, setContainerWidth] = useState(0)
 
-  useEffect(() => {
-    lastIndexRef.current = safeIndex
-  }, [safeIndex])
-
+  // Measure container width
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    // On utilise scrollWidth / count pour avoir la largeur réelle incluant les gaps éventuels
-    const itemWidth = el.scrollWidth / count
-    const left = safeIndex * itemWidth
-    if (Math.abs(el.scrollLeft - left) > 5) {
-      el.scrollTo({ left, behavior: 'smooth' })
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+    
+    resizeObserver.observe(el)
+    setContainerWidth(el.offsetWidth)
+    
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Scroll to active index when it changes programmatically
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || containerWidth === 0 || isScrollingRef.current) return
+    
+    const targetScroll = safeIndex * containerWidth
+    if (Math.abs(el.scrollLeft - targetScroll) > 10) {
+      el.scrollTo({ left: targetScroll, behavior: 'smooth' })
     }
-  }, [safeIndex, count])
+  }, [safeIndex, containerWidth])
 
   const dots = useMemo(() => Array.from({ length: count }, (_, i) => i), [count])
 
-  const onScroll = () => {
+  const onScroll = useCallback(() => {
     const el = containerRef.current
-    if (!el) return
-    const itemWidth = el.scrollWidth / count
-    const idx = Math.round(el.scrollLeft / itemWidth)
+    if (!el || containerWidth === 0) return
+    
+    // Mark as scrolling
+    isScrollingRef.current = true
+    
+    // Clear previous timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    
+    // Calculate current index based on scroll position
+    const scrollLeft = el.scrollLeft
+    const idx = Math.round(scrollLeft / containerWidth)
     const next = Math.max(0, Math.min(count - 1, idx))
-    if (next !== lastIndexRef.current) {
-      lastIndexRef.current = next
+    
+    if (next !== safeIndex) {
       onChangeActiveIndex(next)
     }
-  }
+    
+    // Reset scrolling flag after scroll ends
+    scrollTimeoutRef.current = setTimeout(() => {
+      isScrollingRef.current = false
+    }, 150)
+  }, [containerWidth, count, safeIndex, onChangeActiveIndex])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   if (count <= 1) {
     return (
@@ -114,35 +154,45 @@ export function BoardsNavigator({
         <div
           ref={containerRef}
           onScroll={onScroll}
-          className="flex-1 flex snap-x snap-mandatory gap-0 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden scroll-smooth touch-pan-x overscroll-x-contain"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="flex-1 flex snap-x snap-mandatory overflow-x-auto pb-2 scrollbar-hide scroll-smooth touch-pan-x overscroll-x-contain"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           {plans.map((p) => (
-            <div key={p.boardIndex} className="w-full flex-none snap-center h-full px-1">
+            <div 
+              key={p.boardIndex} 
+              className="snap-center snap-always h-full shrink-0"
+              style={{ width: containerWidth > 0 ? `${containerWidth}px` : '100%' }}
+            >
               <BoardViewer board={board} plan={p} unit={unit} gridEnabled={gridEnabled} pieceColorById={pieceColorById} />
             </div>
           ))}
         </div>
         
-        <div className="flex flex-col items-center gap-4 mt-2">
-          <div className="flex items-center justify-center gap-3 p-2">
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <div className="flex items-center justify-center gap-2">
             {dots.map((i) => (
               <button
                 key={i}
                 type="button"
-                onClick={() => onChangeActiveIndex(i)}
+                onClick={() => {
+                  const el = containerRef.current
+                  if (el && containerWidth > 0) {
+                    el.scrollTo({ left: i * containerWidth, behavior: 'smooth' })
+                  }
+                  onChangeActiveIndex(i)
+                }}
                 aria-label={`Aller à la planche ${i + 1}`}
                 className={clsx(
-                  'transition-all duration-500 ease-apple-out rounded-full',
+                  'transition-all duration-300 rounded-full',
                   i === safeIndex 
-                    ? 'w-8 h-2.5 bg-accent shadow-[0_0_12px_rgba(30,167,255,0.4)]' 
-                    : 'w-2.5 h-2.5 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40'
+                    ? 'w-6 h-2 bg-accent shadow-[0_0_8px_rgba(30,167,255,0.4)]' 
+                    : 'w-2 h-2 bg-white/20 active:bg-white/40'
                 )}
               />
             ))}
           </div>
-          <div className="text-[11px] font-bold text-muted uppercase tracking-[0.25em] opacity-60">
-            Planche {safeIndex + 1} / {count}
+          <div className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-50">
+            {safeIndex + 1} / {count}
           </div>
         </div>
       </div>

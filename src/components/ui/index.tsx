@@ -157,15 +157,15 @@ export const Button = ({
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-xs font-semibold rounded-apple-md",
-    md: "px-4 py-2 text-sm font-semibold rounded-apple-md",
-    lg: "px-6 py-3 text-base font-semibold rounded-apple-lg",
+    sm: "px-3 py-2 md:py-1.5 text-xs font-semibold rounded-apple-md min-h-[36px] md:min-h-0",
+    md: "px-4 py-2.5 md:py-2 text-sm font-semibold rounded-apple-md min-h-[44px] md:min-h-0",
+    lg: "px-6 py-3.5 md:py-3 text-base font-semibold rounded-apple-lg min-h-[48px] md:min-h-0",
   };
 
   return (
     <button 
       className={cn(
-        "inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none select-none",
+        "inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none select-none touch-manipulation",
         variants[variant],
         sizes[size],
         className
@@ -224,23 +224,23 @@ export const KpiPill = ({ label, value, icon: Icon, color = 'accent', className 
 );
 
 export const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) => (
-  <label className="flex items-center gap-3 cursor-pointer group select-none">
+  <label className="flex items-center gap-2 cursor-pointer group select-none touch-manipulation">
     <div 
       onClick={(e) => {
         e.preventDefault();
         onChange(!checked);
       }}
       className={cn(
-        "relative w-10 h-6 rounded-full transition-all duration-300 ease-apple-out border",
+        "relative w-9 h-5 rounded-full transition-all duration-300 ease-apple-out border",
         checked ? "bg-accent border-accent" : "bg-black/[0.05] dark:bg-white/[0.1] border-transparent"
       )}
     >
       <div className={cn(
-        "absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white transition-all duration-300 ease-apple-out shadow-md",
+        "absolute top-[2px] left-[2px] w-[16px] h-[16px] rounded-full bg-white transition-all duration-300 ease-apple-out shadow-md",
         checked ? "translate-x-4" : "translate-x-0"
       )} />
     </div>
-    {label && <span className="text-[13px] font-medium text-muted group-hover:text-text transition-colors">{label}</span>}
+    {label && <span className="text-[10px] font-medium text-muted group-hover:text-text transition-colors">{label}</span>}
   </label>
 );
 
@@ -258,29 +258,31 @@ export const Stepper = ({ value, onChange, min = 0, max = 9999 }: { value: numbe
   };
 
   return (
-    <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md p-0.5 w-32 shrink-0">
+    <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md p-0.5 w-full md:w-32 shrink-0">
       <button 
         type="button"
         onClick={handleDecrement}
-        className="w-9 h-8 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-apple-sm transition-colors text-muted hover:text-text active:scale-90"
+        className="w-10 h-10 md:w-9 md:h-8 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-apple-sm transition-colors text-muted hover:text-text active:scale-90 touch-manipulation"
       >
-        <Minus className="w-3.5 h-3.5" />
+        <Minus className="w-4 h-4 md:w-3.5 md:h-3.5" />
       </button>
       <input 
-        type="number"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={value}
         onChange={(e) => {
           const val = parseInt(e.target.value, 10);
           if (!isNaN(val)) onChange(val);
         }}
-        className="flex-1 min-w-0 bg-transparent text-center text-sm font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="flex-1 min-w-0 bg-transparent text-center text-base md:text-sm font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <button 
         type="button"
         onClick={handleIncrement}
-        className="w-9 h-8 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-apple-sm transition-colors text-muted hover:text-text active:scale-90"
+        className="w-10 h-10 md:w-9 md:h-8 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-apple-sm transition-colors text-muted hover:text-text active:scale-90 touch-manipulation"
       >
-        <Plus className="w-3.5 h-3.5" />
+        <Plus className="w-4 h-4 md:w-3.5 md:h-3.5" />
       </button>
     </div>
   );

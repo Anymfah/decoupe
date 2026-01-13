@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Plus, Trash2, Settings2, Box, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Settings2, Box, Minus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 
@@ -49,35 +49,60 @@ function StockRow({ stock, unit }: { stock: StockPiece; unit: 'mm' | 'cm' }) {
   }
 
   return (
-    <div className="flex items-end gap-3 p-3 rounded-apple-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all group">
-      <div className="flex-1 grid grid-cols-2 gap-2">
-        <Input
-          label={`L (${unit})`}
-          value={formatLength(stock.widthMm, unit)}
-          onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
-          className="h-9 py-1 font-mono text-center px-1"
-        />
-        <Input
-          label={`H (${unit})`}
-          value={formatLength(stock.heightMm, unit)}
-          onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
-          className="h-9 py-1 font-mono text-center px-1"
-        />
-      </div>
+    <div className="p-2.5 rounded-apple-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all group">
+      <div className="flex items-center gap-2">
+        {/* L x H compact inline */}
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[8px] font-bold text-muted2 uppercase tracking-wider">L</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formatLength(stock.widthMm, unit)}
+              onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
+              className="w-full h-8 px-2 text-sm font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded-md border-0 outline-none"
+            />
+          </div>
+          <span className="text-muted2 text-xs mt-3">×</span>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[8px] font-bold text-muted2 uppercase tracking-wider">H</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formatLength(stock.heightMm, unit)}
+              onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
+              className="w-full h-8 px-2 text-sm font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded-md border-0 outline-none"
+            />
+          </div>
+        </div>
 
-      <div className="shrink-0 flex flex-col gap-1">
-        <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1">Qté</label>
-        <Stepper value={stock.quantity} onChange={onChangeQty} />
-      </div>
+        {/* Qty stepper compact */}
+        <div className="shrink-0 flex items-center gap-1 bg-black/5 dark:bg-white/5 rounded-md h-8 mt-3">
+          <button
+            type="button"
+            onClick={() => onChangeQty(stock.quantity - 1)}
+            className="w-7 h-8 flex items-center justify-center text-muted hover:text-text transition-colors touch-manipulation"
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <span className="w-6 text-center text-sm font-bold font-mono">{stock.quantity}</span>
+          <button
+            type="button"
+            onClick={() => onChangeQty(stock.quantity + 1)}
+            className="w-7 h-8 flex items-center justify-center text-muted hover:text-text transition-colors touch-manipulation"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        </div>
 
-      <div className="mb-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
-        <IconButton
-          icon={Trash2}
-          variant="danger"
-          size="sm"
+        {/* Delete button - always visible on mobile */}
+        <button
+          type="button"
           onClick={() => dispatch({ type: 'REMOVE_STOCK', id: stock.id })}
-          className="w-8 h-8 p-0"
-        />
+          className="shrink-0 w-8 h-8 mt-3 flex items-center justify-center text-danger/60 hover:text-danger hover:bg-danger/10 rounded-md transition-all touch-manipulation md:opacity-0 md:group-hover:opacity-100"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   )
@@ -145,68 +170,81 @@ export function BoardInput() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="relative group">
-          <Input
-            label="Largeur"
-            tooltip="Dimension horizontale du panneau brut."
-            placeholder={`en ${unit}`}
-            value={formatLength(board.widthMm, unit)}
-            onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
-            error={errors.width}
-            className="font-mono text-base pr-16"
-          />
-          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="grid grid-cols-2 gap-3">
+        {/* Width input with touch-friendly stepper */}
+        <div>
+          <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+            Largeur ({unit})
+          </label>
+          <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
             <button 
+              type="button"
               onClick={() => {
-                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.widthMm, unit)) - 1, unit));
+                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.widthMm, unit)) - 10, unit));
                 dispatch({ type: 'SET_BOARD', patch: { widthMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-11 h-11 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronLeft className="w-3 h-3" />
+              <Minus className="w-4 h-4" />
             </button>
+            <input 
+              type="text"
+              inputMode="decimal"
+              placeholder={`en ${unit}`}
+              value={formatLength(board.widthMm, unit)}
+              onChange={(e) => onBoardNumberChange('widthMm')(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-center text-base font-mono font-bold outline-none h-11"
+            />
             <button 
+              type="button"
               onClick={() => {
-                const next = toMm(parseUserNumber(formatLength(board.widthMm, unit)) + 1, unit);
+                const next = toMm(parseUserNumber(formatLength(board.widthMm, unit)) + 10, unit);
                 dispatch({ type: 'SET_BOARD', patch: { widthMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-11 h-11 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronRight className="w-3 h-3" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
+          {errors.width && <span className="text-[10px] font-medium text-danger px-1 mt-1 block">{errors.width}</span>}
         </div>
-        <div className="relative group">
-          <Input
-            label="Hauteur"
-            tooltip="Dimension verticale du panneau brut."
-            placeholder={`en ${unit}`}
-            value={formatLength(board.heightMm, unit)}
-            onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
-            error={errors.height}
-            className="font-mono text-base pr-16"
-          />
-          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+
+        {/* Height input with touch-friendly stepper */}
+        <div>
+          <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+            Hauteur ({unit})
+          </label>
+          <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
             <button 
+              type="button"
               onClick={() => {
-                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.heightMm, unit)) - 1, unit));
+                const next = Math.max(0, toMm(parseUserNumber(formatLength(board.heightMm, unit)) - 10, unit));
                 dispatch({ type: 'SET_BOARD', patch: { heightMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-11 h-11 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronLeft className="w-3 h-3" />
+              <Minus className="w-4 h-4" />
             </button>
+            <input 
+              type="text"
+              inputMode="decimal"
+              placeholder={`en ${unit}`}
+              value={formatLength(board.heightMm, unit)}
+              onChange={(e) => onBoardNumberChange('heightMm')(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-center text-base font-mono font-bold outline-none h-11"
+            />
             <button 
+              type="button"
               onClick={() => {
-                const next = toMm(parseUserNumber(formatLength(board.heightMm, unit)) + 1, unit);
+                const next = toMm(parseUserNumber(formatLength(board.heightMm, unit)) + 10, unit);
                 dispatch({ type: 'SET_BOARD', patch: { heightMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-11 h-11 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronRight className="w-3 h-3" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
+          {errors.height && <span className="text-[10px] font-medium text-danger px-1 mt-1 block">{errors.height}</span>}
         </div>
       </div>
 
@@ -265,66 +303,79 @@ export function BoardInput() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 pt-2">
-        <div className="relative group">
-          <Input
-            label="Lame / Kerf (mm)"
-            tooltip="Épaisseur du trait de coupe de votre scie (matière perdue à chaque coupe)."
-            value={String(Math.max(0, Math.round(board.kerfMm)))}
-            onChange={(e) => onBoardNumberChange('kerfMm')(e.target.value)}
-            error={errors.kerf}
-            className="font-mono h-9 pr-16"
-          />
-          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="grid grid-cols-2 gap-3 pt-2">
+        {/* Kerf input */}
+        <div>
+          <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+            Lame / Kerf (mm)
+          </label>
+          <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
             <button 
+              type="button"
               onClick={() => {
                 const next = Math.max(0, board.kerfMm - 1);
                 dispatch({ type: 'SET_BOARD', patch: { kerfMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronLeft className="w-3 h-3" />
+              <Minus className="w-3.5 h-3.5" />
             </button>
+            <input 
+              type="text"
+              inputMode="numeric"
+              value={String(Math.max(0, Math.round(board.kerfMm)))}
+              onChange={(e) => onBoardNumberChange('kerfMm')(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-center text-sm font-mono font-bold outline-none h-10"
+            />
             <button 
+              type="button"
               onClick={() => {
                 const next = board.kerfMm + 1;
                 dispatch({ type: 'SET_BOARD', patch: { kerfMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronRight className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
+          {errors.kerf && <span className="text-[10px] font-medium text-danger px-1 mt-1 block">{errors.kerf}</span>}
         </div>
-        <div className="relative group">
-          <Input
-            label="Marge (mm)"
-            tooltip="Zone de sécurité sur le pourtour de la planche."
-            value={String(Math.max(0, Math.round(board.marginMm)))}
-            onChange={(e) => onBoardNumberChange('marginMm')(e.target.value)}
-            error={errors.margin}
-            className="font-mono h-9 pr-16"
-          />
-          <div className="absolute bottom-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+
+        {/* Margin input */}
+        <div>
+          <label className="text-[10px] font-bold text-muted2 uppercase tracking-widest px-1 mb-1 block">
+            Marge (mm)
+          </label>
+          <div className="flex items-center bg-black/5 dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] rounded-apple-md">
             <button 
+              type="button"
               onClick={() => {
                 const next = Math.max(0, board.marginMm - 1);
                 dispatch({ type: 'SET_BOARD', patch: { marginMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-l-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronLeft className="w-3 h-3" />
+              <Minus className="w-3.5 h-3.5" />
             </button>
+            <input 
+              type="text"
+              inputMode="numeric"
+              value={String(Math.max(0, Math.round(board.marginMm)))}
+              onChange={(e) => onBoardNumberChange('marginMm')(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-center text-sm font-mono font-bold outline-none h-10"
+            />
             <button 
+              type="button"
               onClick={() => {
                 const next = board.marginMm + 1;
                 dispatch({ type: 'SET_BOARD', patch: { marginMm: next } });
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-apple-sm bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+              className="w-10 h-10 flex shrink-0 items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-r-apple-md transition-colors text-muted active:scale-90 touch-manipulation"
             >
-              <ChevronRight className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
+          {errors.margin && <span className="text-[10px] font-medium text-danger px-1 mt-1 block">{errors.margin}</span>}
         </div>
       </div>
 

@@ -79,7 +79,7 @@ export function CutsList() {
         </div>
       )}
 
-      <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+      <div className="space-y-2 md:space-y-2.5 max-h-[50vh] md:max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
         {visibleCuts.map((c) => (
           <CutRow
             key={c.id}
@@ -95,13 +95,13 @@ export function CutsList() {
               dispatch({ type: 'ADD_CUT', cut: nextCut })
               setExpandedId(nextCut.id)
             }}
-            className="w-full text-center py-12 rounded-apple-xl bg-white/[0.02] border border-dashed border-white/10 hover:bg-white/[0.04] hover:border-white/20 transition-all group"
+            className="w-full text-center py-8 md:py-12 rounded-apple-xl bg-white/[0.02] border border-dashed border-white/10 hover:bg-white/[0.04] hover:border-white/20 transition-all group touch-manipulation active:scale-[0.98]"
           >
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <Plus className="w-6 h-6 text-muted group-hover:text-accent" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <Plus className="w-5 h-5 md:w-6 md:h-6 text-muted group-hover:text-accent" />
             </div>
             <p className="text-sm text-muted group-hover:text-text transition-colors">Aucune découpe définie</p>
-            <p className="text-[11px] text-muted/50 mt-1">Cliquez ici pour ajouter votre première pièce</p>
+            <p className="text-[11px] text-muted/50 mt-1">Appuyez pour ajouter votre première pièce</p>
           </button>
         )}
       </div>
