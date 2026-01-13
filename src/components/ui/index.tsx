@@ -231,12 +231,12 @@ export const Toggle = ({ checked, onChange, label }: { checked: boolean; onChang
         onChange(!checked);
       }}
       className={cn(
-        "relative w-9 h-5 rounded-full transition-all duration-300 ease-apple-out border",
-        checked ? "bg-accent border-accent" : "bg-black/[0.05] dark:bg-white/[0.1] border-transparent"
+        "relative w-10 h-6 rounded-full transition-all duration-300 ease-apple-out border flex items-center px-0.5",
+        checked ? "bg-accent border-accent" : "bg-black/10 dark:bg-white/[0.1] border-black/5 dark:border-transparent"
       )}
     >
       <div className={cn(
-        "absolute top-[2px] left-[2px] w-[16px] h-[16px] rounded-full bg-white transition-all duration-300 ease-apple-out shadow-md",
+        "w-5 h-5 rounded-full bg-white transition-all duration-300 ease-apple-out shadow-md",
         checked ? "translate-x-4" : "translate-x-0"
       )} />
     </div>

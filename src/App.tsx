@@ -504,7 +504,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#070A10]/95 backdrop-blur-xl border-t border-white/[0.06] safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#070A10]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/[0.06] safe-area-bottom">
         <div className="flex items-stretch justify-around h-16 px-2">
           {tabs.map((tab) => {
             const isActive = mobileTab === tab.id
@@ -516,7 +516,7 @@ export default function App() {
                 onClick={() => setMobileTab(tab.id)}
                 className={clsx(
                   "flex-1 flex flex-col items-center justify-center gap-0.5 relative transition-all duration-300 touch-manipulation",
-                  isActive ? "text-accent" : "text-muted/60 active:text-muted"
+                  isActive ? "text-accent" : "text-black/50 dark:text-white/50 active:text-black/70 dark:active:text-white/70"
                 )}
               >
                 {isActive && (
