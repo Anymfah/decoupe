@@ -49,29 +49,29 @@ function StockRow({ stock, unit }: { stock: StockPiece; unit: 'mm' | 'cm' }) {
   }
 
   return (
-    <div className="p-2.5 rounded-apple-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all group">
-      <div className="flex items-center gap-2">
+    <div className="p-2 rounded-apple-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all group">
+      <div className="flex items-center gap-1.5">
         {/* L x H compact inline */}
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[8px] font-bold text-muted2 uppercase tracking-wider">L</span>
+            <span className="text-[7px] font-bold text-muted2 uppercase">L</span>
             <input
               type="text"
               inputMode="decimal"
               value={formatLength(stock.widthMm, unit)}
               onChange={(e) => onChangeNumber('widthMm')(e.target.value)}
-              className="w-full h-8 px-2 text-sm font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded-md border-0 outline-none"
+              className="w-full h-7 px-1 text-xs font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded border-0 outline-none"
             />
           </div>
-          <span className="text-muted2 text-xs mt-3">×</span>
+          <span className="text-muted2 text-[10px] mt-2.5">×</span>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[8px] font-bold text-muted2 uppercase tracking-wider">H</span>
+            <span className="text-[7px] font-bold text-muted2 uppercase">H</span>
             <input
               type="text"
               inputMode="decimal"
               value={formatLength(stock.heightMm, unit)}
               onChange={(e) => onChangeNumber('heightMm')(e.target.value)}
-              className="w-full h-8 px-2 text-sm font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded-md border-0 outline-none"
+              className="w-full h-7 px-1 text-xs font-mono font-bold text-center bg-black/5 dark:bg-white/5 rounded border-0 outline-none"
             />
           </div>
         </div>

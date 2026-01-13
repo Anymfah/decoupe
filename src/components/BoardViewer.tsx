@@ -217,25 +217,23 @@ export function BoardViewer({
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between gap-3 px-1">
-        <div className="min-w-0">
-          <div className="text-[10px] font-bold text-muted2 uppercase tracking-widest mb-0.5">Format de planche</div>
-          <div className="truncate text-base font-bold tracking-tight text-white/90">
+      <div className="mb-3 flex items-center justify-between gap-2 px-1">
+        <div className="min-w-0 flex-1">
+          <div className="text-[9px] font-bold text-muted2 uppercase tracking-widest mb-0.5">Format de planche</div>
+          <div className="text-sm font-bold tracking-tight text-white/90">
             {mmToLabel(boardW, unit)} <span className="text-muted/40 font-normal">×</span> {mmToLabel(boardH, unit)}
           </div>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
+        <button
           onClick={() => {
             if (!svgRef.current) return
             exportSvgToPng(svgRef.current, `ezcut-be-planche-${(plan?.boardIndex ?? 0) + 1}.png`)
           }}
-          className="h-9 px-3"
+          className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-muted hover:text-white"
         >
-          <Download className="h-4 w-4 mr-2" />
-          Exporter PNG
-        </Button>
+          <Download className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-bold uppercase tracking-wide">PNG</span>
+        </button>
       </div>
 
       <div className="relative h-[500px] flex-1 overflow-hidden rounded-apple-lg border border-black/5 dark:border-white/5 bg-black/5 dark:bg-black/40 shadow-inner p-2">

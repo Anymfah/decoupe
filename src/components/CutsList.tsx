@@ -5,7 +5,13 @@ import { createEmptyCut, useAppDispatch, useAppState } from '../hooks/useAppStat
 import { CutRow } from './CutRow'
 import { Button, SectionTitle } from './ui'
 
-export function CutsList() {
+export function CutsList({ 
+  pendingExpandId, 
+  onExpandHandled 
+}: { 
+  pendingExpandId?: string | null
+  onExpandHandled?: () => void 
+} = {}) {
   const { cuts, board } = useAppState()
   const dispatch = useAppDispatch()
 
@@ -18,6 +24,14 @@ export function CutsList() {
       setExpandedId(null)
     }
   }, [cuts, expandedId])
+
+  // Handle pending expand from parent
+  useEffect(() => {
+    if (pendingExpandId && cuts.some(c => c.id === pendingExpandId)) {
+      setExpandedId(pendingExpandId)
+      onExpandHandled?.()
+    }
+  }, [pendingExpandId, cuts, onExpandHandled])
 
   const { totalTypes, totalPieces } = useMemo(() => {
     const pieces = cuts.reduce((sum, c) => sum + Math.max(0, c.quantity), 0)

@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Copy, RotateCcw, Trash2, Palette, Minus, Plus, HelpCircle } from 'lucide-react'
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import clsx from 'clsx'
 
 import type { RotationMode } from '../lib/packing'
@@ -73,7 +73,6 @@ export function CutRow({
 }) {
   const { cuts, board, globalRotationDefault } = useAppState()
   const dispatch = useAppDispatch()
-  const colorInputRef = useRef<HTMLInputElement>(null)
 
   const cut = useMemo(() => cuts.find((c) => c.id === id), [cuts, id])
   if (!cut) return null
@@ -149,21 +148,18 @@ export function CutRow({
           </div>
 
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="p-1.5 rounded-apple-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-              onClick={() => colorInputRef.current?.click()}
+            <label
+              className="p-1.5 rounded-apple-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
               title="Couleur"
             >
               <Palette className="w-3.5 h-3.5" />
-            </button>
-            <input
-              ref={colorInputRef}
-              type="color"
-              className="sr-only"
-              value={displayColorHex}
-              onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: e.target.value } })}
-            />
+              <input
+                type="color"
+                className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                value={displayColorHex}
+                onChange={(e) => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: e.target.value } })}
+              />
+            </label>
 
             <button
               type="button"
@@ -303,11 +299,13 @@ export function CutRow({
             
             <button
               type="button"
-              className="text-[8px] font-bold text-muted uppercase tracking-wide px-2 py-1 rounded-md bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-accent/10 hover:text-accent hover:border-accent/30 active:scale-95 transition-all flex items-center gap-1"
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-accent/10 hover:text-accent hover:border-accent/30 active:scale-95 transition-all text-muted"
               onClick={() => dispatch({ type: 'UPDATE_CUT', id: cut.id, patch: { colorHex: undefined } })}
             >
-              <RotateCcw className="w-2.5 h-2.5" />
-              Reset couleur
+              <RotateCcw className="w-2 h-2" />
+              <span style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Reset couleur
+              </span>
             </button>
           </div>
         </div>

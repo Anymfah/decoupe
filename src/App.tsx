@@ -26,6 +26,7 @@ export default function App() {
   const [placementsOpen, setPlacementsOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [mobileTab, setMobileTab] = useState<MobileTab>('cuts')
+  const [pendingExpandCutId, setPendingExpandCutId] = useState<string | null>(null)
 
   const logo = theme === 'dark' ? logoDark : logoLight
 
@@ -64,6 +65,7 @@ export default function App() {
   const handleQuickAddCut = () => {
     const nextCut = createEmptyCut({ label: `P${state.cuts.length + 1}` })
     dispatch({ type: 'ADD_CUT', cut: nextCut })
+    setPendingExpandCutId(nextCut.id)
     setMobileTab('cuts')
   }
 
@@ -91,7 +93,7 @@ export default function App() {
         return (
           <div className="animate-fade-in">
             <GlassCard className="p-4 border-black/[0.03] dark:border-white/[0.03]">
-              <CutsList />
+              <CutsList pendingExpandId={pendingExpandCutId} onExpandHandled={() => setPendingExpandCutId(null)} />
             </GlassCard>
           </div>
         )
@@ -213,8 +215,49 @@ export default function App() {
               <div className="text-[10px] font-bold text-accent uppercase tracking-[0.2em] mb-3">Gestion de projet</div>
               <ImportExport />
             </GlassCard>
-            
-            <StatusPanel result={result} />
+
+            {/* Support & Credits */}
+            <GlassCard className="p-4 border-black/[0.03] dark:border-white/[0.03]">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-[10px] font-bold text-accent uppercase tracking-[0.2em]">Aide & infos</div>
+                <button 
+                  onClick={() => setSupportOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-muted hover:text-accent transition-colors"
+                >
+                  <Info className="w-3 h-3" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Support
+                  </span>
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-muted/50">
+                  <span>ezcut.be</span>
+                  <span className="w-1 h-1 rounded-full bg-current opacity-30" />
+                  <span>v2.1</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a 
+                    href="https://github.com/Anymfah" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:text-accent transition-colors border border-black/5 dark:border-white/5"
+                    title="GitHub"
+                  >
+                    <Github className="w-3.5 h-3.5" />
+                  </a>
+                  <a 
+                    href="https://www.linkedin.com/in/ss-jamii/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-muted hover:text-accent transition-colors"
+                  >
+                    Soheil Saheb-Jamii
+                  </a>
+                </div>
+              </div>
+            </GlassCard>
           </div>
         )
       
@@ -299,7 +342,7 @@ export default function App() {
               </GlassCard>
               
               <GlassCard className="p-5 border-black/[0.03] dark:border-white/[0.03]">
-                <CutsList />
+                <CutsList pendingExpandId={pendingExpandCutId} onExpandHandled={() => setPendingExpandCutId(null)} />
               </GlassCard>
 
               <GlassCard className="p-4 bg-accent/[0.02] border-accent/10">
